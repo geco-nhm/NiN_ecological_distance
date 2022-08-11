@@ -1,1 +1,1 @@
-
+This folder contains the script for generating ecological distance matrices and arrays of matrices for violations of criteria. A short description of how these are generated is given in the "documentation"-folder, and the necessary excel sheets for generating them are given in the "excel_files"-folder.
