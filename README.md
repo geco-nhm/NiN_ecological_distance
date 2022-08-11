@@ -7,3 +7,5 @@ This measure of Ecological distance is based on the structure of the ["Nature in
 Ecological distance is a useful measure for assessing differences between e.g. two maps of the same area.
 
 Main developer: [Adam E. Naas](https://www.nhm.uio.no/?vrtx=person-view&uid=adamen)
+
+The folder "documentation" contains a short description of ecological distance, violation of criteria, and how it was calculated. The script in the "script"-folder use excel sheets in the "excel_files"-folder to derive ecological distance matrices and arrays of matrices with criteria violations contained in "matrices". All matrices and arrays exist for the 1:5000 level, 1:20 000 level, major-type level and major-type group level.
