@@ -1,5 +1,7 @@
 # Ecological Distance
 
+*Written by Adam E. Naas, revised by Eva Lieungh*
+
 The NiN ecosystem typology (Halvorsen et al. 2020) is hierarchical, with three nested levels (major-type groups, major types, and minor types). In addition, mapping units are defined by merging minor types (within, but not across, major types) to be suitable for mapping at scales 1:5000, 1:10 000, and 1:20 000.
 
 Within major-type groups (e.g. Terrestrial and Wetland ecosystems), major types are defined by a set of principles, e.g. separating ecosystems differing in type of disturbance or in dominance of ecosystem-engineering species groups (e.g. trees, helophytes). Within major types, each minor type spans an interval of standardised size along each main local complex environmental gradient (e.g. soil moisture gradient, lime richness gradient). This interval comprises a standardised amount of species compositional turnover (25% change in species composition, defined as one ecological distance unit (EDU).
