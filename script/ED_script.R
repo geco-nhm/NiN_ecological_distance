@@ -2,9 +2,10 @@
 # ecological distance calculation #
 ###################################
 
-# by Adam E. Naas, revised by Eva Lieungh
+# by Adam E. Naas, Eva Lieungh
 
-# this script ...
+# this script calculates the Ecological Distance between all terrestrial + 
+# wetland mapping units in 1:5000 and saves it as a csv file for use in analysis.
 
 # check your working directory:
 # it should be <your local path>/NiN_ecological_distance/script
@@ -95,10 +96,3 @@ rownames(ed) <- typenames_mu
 
 #Save ED matrix
 write.csv(ed,"../matrices/ED5000.csv")
-
-#Load old ED matrix
-ed_old <- as.data.frame(read_xlsx("../matrices/ED5.xlsx"))
-
-#Compare results
-ed_old - ed
-ed[c("V1-C-5"),c("T4-C-5")]
