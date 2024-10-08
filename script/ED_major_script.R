@@ -21,28 +21,28 @@ n_mtypes <- 60
 {
   #Structuring species group
   structuring_species <- numeric(n_mtypes)
-  structuring_species[c(4,30,47,53)] <- 1
-  structuring_species[59] <- 2
+  structuring_species[c(4,30,47,53)] <- 1 # trees
+  structuring_species[59] <- 2 # helophytes
   
   #Anthropogenic influence
   anthropogenic_influence <- numeric(n_mtypes)
-  anthropogenic_influence[c(1:30,46:53,59:60)] <- 1
-  anthropogenic_influence[c(31:34,54:55)] <- 2
-  anthropogenic_influence[c(35:45,56:58)] <- 3
+  anthropogenic_influence[c(1:30,46:53,59:60)] <- 1 # natural / weak influence
+  anthropogenic_influence[c(31:34,54:55)] <- 2 # semi-natural / clear influence
+  anthropogenic_influence[c(35:45,56:58)] <- 3 # strongly modified
   
   #Major type group
   major_type_group <- numeric(n_mtypes)
-  major_type_group[1:45] <- 1
-  major_type_group[46:58] <- 2
-  major_type_group[59:60] <- 3
+  major_type_group[1:45] <- 1 # non-wetland
+  major_type_group[46:58] <- 2 # wetland
+  major_type_group[59:60] <- 3 # limnic
   
   #Factor LCE
   factor_LCE <- numeric(n_mtypes)
   factor_LCE[c(25:29,48,53)] <- 1:7
   
-  #Strongly modified LCE
+  #Clearly modified LCE
   clear_LCE <- rep(NA, n_mtypes)
-  clear_LCE[c(31,34)] <- c(1,2)
+  clear_LCE[c(31,34)] <- c(1,2) # boreal and coastal heaths
   
   #Strongly modified LCE
   strong_LCE <- rep(NA, n_mtypes)
@@ -81,11 +81,14 @@ ed_major <- do.call(cbind, list_ed_major)
 ed_major <- floor(ed_major)
 
 #Rename columns
-colnames(ed_major) <- c("T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12","T13","T14","T15","T16","T17","T18","T19","T20","T21","T22","T23","T24","T25","T26",
-                        "T27","T28","T29","T30","T31","T32","T33","T34","T35","T36","T37","T38","T39","T40","T41","T42","T43","T44","T45","V1","V2","V3","V4","V5","V6","V7",
-                        "V8","V9","V10","V11","V12","V13","L4","L")
+typenames <- c("T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12","T13","T14","T15","T16","T17","T18","T19","T20","T21","T22","T23","T24","T25","T26",
+               "T27","T28","T29","T30","T31","T32","T33","T34","T35","T36","T37","T38","T39","T40","T41","T42","T43","T44","T45","V1","V2","V3","V4","V5","V6","V7",
+               "V8","V9","V10","V11","V12","V13","L4","L")
+colnames(ed_major) <- typenames
+rownames(ed_major) <- typenames
+
 #Save ED matrix
-write.csv(ed_major,"../matrices/ED_major_test.csv")
+write.csv(ed_major,"../matrices/ED_major.csv")
 
 #Load old ED matrix
 ed_old <- as.data.frame(read_xlsx("../matrices/MT.xlsx"))
