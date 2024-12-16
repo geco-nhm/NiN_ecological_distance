@@ -9,7 +9,7 @@
   library(parallel)
   
   #Set working directory
-  setwd("C:/Users/adamen/OneDrive - Universitetet i Oslo/documents/Doktorgrad/Tolga/NiN_ecological_distance/NiN_version_3/excel_files")
+  setwd("C:/Users/adamen/OneDrive - Universitetet i Oslo/documents/Doktorgrad/Tolga/NiN_ecological_distance/NiN_version_3/")
   
   #Define function to identify major-type specific steps
   find.mt.steps <- function(lec_vector) {
@@ -878,8 +878,28 @@
     #Identify the mapping units within the major type
     unique_mu <- unique(current_agg)
     
+    #Add mapping unit string
+    mu_string <- as.character(seq_along(unique_mu))
+    
+    #Add zero as the first character to numbers below 10
+    mu_string <- unlist(lapply(X = mu_string, FUN = function(x) { 
+      
+      #Check if the character is a digit between 1 and 9
+      if (grepl("^([1-9])$", x)) {
+        
+        #Add zero as the first character
+        return(x <- paste0("0", x))
+        
+      } else {
+        
+        #Return the character unchanged
+        return(x)
+      }
+      
+    }))
+    
     #Create a vector with mapping units for the major type
-    code <- paste(mt, "-", seq_along(unique(unique_mu)), sep = "")
+    code <- paste(mt, "-", mu_string, sep = "")
     
     #Create a column for major type group
     mtg <- substr(x = code, start = 1, stop = 1)
@@ -1097,10 +1117,10 @@
   
   
   #Import master data file
-  data_0005 <- read_xlsx(path = "NiN3.0_SplitVar.xlsx", sheet = "Typer")
+  data_0005 <- read_xlsx(path = "input/NiN3.0_SplitVar.xlsx", sheet = "Typer")
   
   #Import data for criteria
-  criteria_mt <- read.csv("NiN3_categorical_variables.csv")
+  criteria_mt <- read.csv("input/NiN3_categorical_variables.csv")
   
   #Convert to data frame
   data_0005 <- as.data.frame(data_0005)
@@ -1971,7 +1991,7 @@ for (i in 1:n) {
   for (j in 1:n) {
     
     #Compute ED for all pairs of mapping units
-    ed_matrix[i,j] <- compute.ed.ultimate(i, j, units_005, lecs_005_matrix, mt_specific_005, hlec_dlec_005, hlec_005, dlec_005, dlec_without_005, criteria_005, cor_lec, mt_specific_number_0005, mt_specific_number_0005)
+    ed_matrix[i,j] <- compute.ed.ultimate(i, j, units_005, lecs_005_matrix, mt_specific_005, hlec_dlec_005, hlec_005, dlec_005, dlec_without_005, criteria_005, cor_lec, mt_specific_number_0005, mt_specific_number_005)
     
     #Print progress bar
     print(paste("j =", j, ", i =", i))
@@ -1988,7 +2008,7 @@ colnames(ed_data_frame) <- units_005$code
 rownames(ed_data_frame) <- units_005$code
 
 #Round down to integer values
-#ed_data_frame <- floor(ed_data_frame)
+ed_data_frame <- round(ed_data_frame, digits = 1)
 
 # Save ED data frame for 1.5000 to disk ----
 
@@ -2013,7 +2033,7 @@ for (i in 1:n) {
   for (j in 1:n) {
     
     #Compute ED for all pairs of mapping units
-    ed_matrix[i,j] <- compute.ed.ultimate(i, j, units_020, lecs_020_matrix, mt_specific_020, hlec_dlec_020, hlec_020, dlec_020, dlec_without_020, criteria_020, cor_lec, mt_specific_number_005, mt_specific_number_020)
+    ed_matrix[i,j] <- compute.ed.ultimate(i, j, units_020, lecs_020_matrix, mt_specific_020, hlec_dlec_020, hlec_020, dlec_020, dlec_without_020, criteria_020, cor_lec, mt_specific_number_0005, mt_specific_number_020)
     
     #Print progress bar
     print(paste("j =", j, ", i =", i))
@@ -2030,7 +2050,7 @@ colnames(ed_data_frame) <- units_020$code
 rownames(ed_data_frame) <- units_020$code
 
 #Round down to integer values
-#ed_data_frame <- floor(ed_data_frame)
+ed_data_frame <- round(x = ed_data_frame, digits = 1)
 
 
 # Save ED data frame for 1.20000 to disk ----
