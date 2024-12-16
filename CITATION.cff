@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "You can cite this repository as follows."
+authors:
+- family-names: "Naas"
+  given-names: "Adam E."
+  orcid: "https://orcid.org/0000-0001-9736-9020"
+- family-names: "Lieungh"
+  given-names: "Eva"
+  orcid: "https://orcid.org/0000-0003-4009-944X"
+- family-names: "Folland"
+  given-names: "Amanda M.A."
+  orcid: ""
+title: "NiN Ecological distance"
+doi: 
+date-released: 2022-08-11
+url: "https://github.com/geco-nhm/NiN_ecological_distance"
