@@ -94,6 +94,40 @@ as plain CSV files that can be read directly with R's `read.csv()`.
 
 See `script/README.md` for paired-vector lookup examples.
 
+### Reclassifying types by ecological attributes
+
+The type-profile tables provide each mapping unit's effective LEC ranges and
+categorical criteria. Individual-type ranges take precedence. Missing ranges are
+filled from the major type's defining LECs, followed by the major-type group's
+ranges. Provenance follows that actual fill order and is combined when minor types
+are aggregated. A missing LEC remains undefined; it is not assigned position zero.
+
+For gradient LECs, `position_major_type` uses the same `convert.bs()` positions as
+ED, on the type's own adapted step reference. These local coordinates are not
+comparable across major types. They do not include `major_type_adjustment`, which
+is exported separately. The shared option, `position_shared`, averages the ordinal
+ranks of the observed basic steps on one reference per LEC, common to both mapping
+scales. The reference orders `0`, then `a` through `z`, skips unobserved steps, and
+assigns ranks starting at 1. Equal ranges therefore have equal shared positions,
+regardless of major type. These are descriptive ranks, not calibrated environmental
+measurements or a replacement for the pairwise ecological-distance calculation.
+
+Factor LECs retain their letter levels and do not receive numerical positions.
+Categorical criteria retain the original 0/1/NA values. In particular, forest-line
+NA is preserved; it must not be silently reclassified to below-forest-line 0.
+
+The source row LC01-05 has `[KA_w] VT_C`, with a missing comma. The import repairs
+the separator and applies the intended KA_w exclusion, leaving VT_C and undefined
+KA. The previous parser incorrectly joined these tokens and assigned C to KA,
+which also incorrectly triggered its uppercase-factor rule. The erroneous C
+propagated into KA reference steps for seven major types through the existing
+border-step logic. Repairing the source changes 5,120 unordered distances at
+1:5000 and 2,252 at 1:20 000; all involve LC01 or a formerly contaminated KA
+reference. The regenerated outputs incorporate this correction; KA remains a
+gradient.
+
+See `script/README.md` for choosing the reference and reclassifying a vector.
+
 ### References
 
 Halvorsen, R., Skarpaas, O., Bryn, A., Bratli, H., Erikstad, L., Simensen, T., & Lieungh, E. (2020). Towards a systematics of ecodiversity: The EcoSyst framework. *Global Ecology and Biogeography*, 29(11), 1887–1906. <https://doi.org/10.1111/geb.13164>

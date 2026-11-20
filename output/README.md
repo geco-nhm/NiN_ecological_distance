@@ -15,3 +15,13 @@ Any joint correlation correction is a separate negative adjustment; all signed
 contributions must be summed. Nonzero terms retain precision; pairs without any
 nonzero terms have a `no_difference` row. There are no total rows to double-count. See
 `script/README.md` for lookup examples and `Documentation.md` for component rules.
+
+The reclassification lookup files `type_profiles_005.csv` and
+`type_profiles_020.csv` contain letter ranges, provenance, categorical values,
+and both local major-type and shared numerical gradient positions. Choose the
+reference in `reclassify.types()`; see `script/README.md` for examples.
+`lec_reference_steps.csv` defines the shared basic-step ranks for both scales.
+These ranks are ordinal positions, not physical measurements or total ED.
+
+The current outputs incorporate the LC01-05 parsing repair: `[KA_w] VT_C` is
+interpreted as separate tokens, with the excluded KA_w removed and VT_C retained.

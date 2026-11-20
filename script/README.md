@@ -62,3 +62,62 @@ after a scale finishes calculating and every pair passes the additivity check.
 
 Run the focused tests with `Rscript tests/test_ed_decomposition.R`. After generating
 outputs, run `Rscript tests/check_generated_outputs.R` to check every exported pair.
+
+Type profiles for reclassification are written to `output/type_profiles_005.csv`
+and `output/type_profiles_020.csv`. Read the file for the mapping scale of your
+vector. Each type has a row for every LEC and categorical criterion, including
+undefined values. `range` retains the basic-step letters; `source` identifies
+`individual`, `major_type`, or `major_type_group`. Aggregated mapping units can
+combine sources, separated by `;`. Categorical criteria have source
+`major_type_criteria` and retain their numeric `value` (including meaningful NA).
+
+Two numerical reference options are available for gradient LECs:
+
+- `reference = "shared"` (default): mean of the 1-based ranks of the observed
+  basic steps, ordered `0`, `a`, ..., `z`. Only observed steps receive ranks;
+  gaps in the alphabet do not insert unobserved steps. The reference is based on
+  the full minor-type profiles and is identical for both mapping scales. Its
+  explicit mapping is saved as `output/lec_reference_steps.csv`.
+- `reference = "major_type"`: mean position using the type's own major-type
+  adapted step partitions and the existing `convert.bs()` offsets. These
+  positions are local to each major type. `major_type_steps` records the
+  reference partitions separated by `|`. `major_type_adjustment` records the
+  additional scale adjustment used in ED; it is not applied to the positions.
+  For one gradient within a major type, the ED contribution is the absolute
+  position difference multiplied by this adjustment, before correlation rules.
+
+Neither reference gives a physical measurement or a complete reconstruction of
+between-major-type ED. Factor levels retain letters and have no numeric position.
+Status columns identify undefined ranges, factor values, or invalid references;
+KA is explicitly treated as a gradient. Missing map cells remain missing, unknown
+type codes raise an error, and vector order, names, and repeated labels are kept.
+
+```r
+source("script/type_profiles.R")
+profiles <- read.csv("output/type_profiles_005.csv")
+types <- c("TA01-01", "TA01-02", "TB01-01", NA)
+
+reclassify.types(types, "KA", profiles, reference = "shared")
+reclassify.types(types, "KA", profiles, reference = "major_type")
+reclassify.types(types, "KA", profiles, representation = "range")
+reclassify.types(types, "above_forest_line", profiles)
+```
+
+Use `representation = "range"` for factor LECs; requesting numeric positions for
+them returns NA. Criteria such as `above_forest_line` always return their input
+numeric values in position mode, independent of the reference option. No pairwise
+SSG suppression or other distance rules are applied to these type attributes.
+
+To generate only the lookup files, without recalculating pairwise distances:
+
+```sh
+Rscript script/create_ed_matrix.R --profiles-only
+```
+
+Run `Rscript tests/test_type_profiles.R` for focused lookup tests and
+`Rscript tests/check_generated_profiles.R` to check the generated tables.
+
+The import repairs LC01-05's malformed `[KA_w] VT_C` separator and applies the
+existing exclusion of `[KA_w]` as a whole token. LC01-05 consequently has VT_C
+and no KA value. The Excel source itself is preserved. This correction affects
+some distance/decomposition entries compared with the previous parser.

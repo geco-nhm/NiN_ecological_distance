@@ -10,6 +10,7 @@
 
   source("script/ed_functions.R")
   source("script/ed_decomposition.R")
+  source("script/type_profiles.R")
 
   #Run this script from the repository root
   dir.create("output", showWarnings = FALSE)
@@ -55,8 +56,8 @@
                       "18","19","mu","scale_005","20","21","scale_020","22","23","scale_050","24","25",
                       "comments","mtg","pc","mt","nin2_mt","nin2_mtg","nin2_mu")
   
-  #Remove KA_w from the definitions
-  data_0005$def <- gsub(", \\[KA_w\\]", "", data_0005$def)
+  #Repair the LC01-05 separator and exclude KA_w wherever its token occurs.
+  data_0005$def <- clean.lec.definitions(data_0005$def)
 
   #Convert workbook shorthand to explicit basic steps before parsing LECs.
   data_0005$def <- expand.lower.steps(data_0005$def)
@@ -399,6 +400,11 @@ cor_lec
     }
   }
   
+  #Record the source of each effective range before filling inherited values.
+  lec_sources_0005 <- as.data.frame(ifelse(
+    is.na(as.matrix(lecs_0005)), NA_character_, "individual"
+  ), stringsAsFactors = FALSE, check.names = FALSE)
+
   #For dLECs
   #Loop through each element in the list
   for (i in seq_along(dlec_mt)) {
@@ -449,6 +455,9 @@ cor_lec
     }
   }
   
+  newly_defined <- is.na(as.matrix(lec_sources_0005)) & !is.na(as.matrix(lecs_0005))
+  lec_sources_0005[newly_defined] <- "major_type"
+
   #For major_type groups
   #Loop through each element in the list
   for (i in seq_along(lec_mtg)) {
@@ -501,6 +510,9 @@ cor_lec
   
   
   
+  newly_defined <- is.na(as.matrix(lec_sources_0005)) & !is.na(as.matrix(lecs_0005))
+  lec_sources_0005[newly_defined] <- "major_type_group"
+
   #Create a vector that contains the entire gradient for each LEC
   #Create a data frame with mapping units as rows and LECs as columns
   lec_steps <- character(length(unique_strings))
@@ -875,9 +887,24 @@ mt_specific_020
 mt_specific_number_020
 
 
-# Calculate distances and write decomposition tables for both scales ----
+# Export type profiles, and optionally calculate distances and decompositions ----
+shared_reference <- create.shared.reference(lec_steps)
+write.csv(shared_reference, "output/lec_reference_steps.csv", row.names = FALSE)
+profiles_only <- "--profiles-only" %in% commandArgs(trailingOnly = TRUE)
 for (scale in c("005", "020")) {
-  write.ed.outputs(
+  profile_sources <- do.call(rbind, lapply(unique_mt, function(mt) {
+    aggregate.profile.sources(units_0005, lec_sources_0005, paste0("scale_", scale), mt)
+  }))
+  profiles <- create.type.profiles(
+    units = get(paste0("units_", scale)), lec = get(paste0("lecs_", scale)),
+    sources = profile_sources, criteria_data = get(paste0("criteria_", scale)),
+    mt_specific_list = get(paste0("mt_specific_", scale)),
+    shared_reference = shared_reference,
+    mt_specific_number_minor_types = mt_specific_number_0005,
+    mt_specific_number_mu = get(paste0("mt_specific_number_", scale))
+  )
+  write.csv(profiles, paste0("output/type_profiles_", scale, ".csv"), row.names = FALSE)
+  if (!profiles_only) write.ed.outputs(
     units = get(paste0("units_", scale)),
     lec = get(paste0("lecs_", scale)),
     mt_specific_list = get(paste0("mt_specific_", scale)),

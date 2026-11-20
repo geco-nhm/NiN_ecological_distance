@@ -292,6 +292,17 @@ extract.lecs <- function(lec_list) {
   return(extracted_lecs)
 }
 
+# Repair the missing separator in LC01-05 and apply the existing KA_w exclusion
+# to a whole token, including when it occurs at the start of a definition.
+clean.lec.definitions <- function(definitions) {
+  vapply(definitions, function(definition) {
+    if (is.na(definition) || !grepl("[KA_w]", definition, fixed = TRUE)) return(definition)
+    definition <- gsub("[KA_w] VT_C", "[KA_w], VT_C", definition, fixed = TRUE)
+    tokens <- trimws(strsplit(definition, ",", fixed = TRUE)[[1]])
+    paste(tokens[tokens != "[KA_w]"], collapse = ", ")
+  }, character(1), USE.NAMES = FALSE)
+}
+
 #Function to convert from character-based basic steps to numerical values
 convert.bs <- function(basic_steps, index) {
   
@@ -380,6 +391,26 @@ remove.common.bs <- function(lec_vector) {
   return(modified_lec)
 }
 
+# Positions on a chosen gradient reference, using the existing basic-step spacing.
+# Strict coverage is useful for lookups; compute.ed retains its intersection rule.
+gradient.positions <- function(reference_steps, ranges, require_all = FALSE) {
+  if (!length(reference_steps) || anyNA(reference_steps) ||
+      any(grepl("[A-Z]", reference_steps))) return(rep(NA_real_, length(ranges)))
+  split_steps <- strsplit(reference_steps, "")
+  basic_steps <- unlist(split_steps, use.names = FALSE)
+  positions <- unlist(lapply(seq_along(split_steps), function(i) {
+    convert.bs(split_steps[[i]], i)
+  }), use.names = FALSE)
+  vapply(ranges, function(range) {
+    if (is.na(range)) return(NA_real_)
+    selected <- strsplit(range, "")[[1]]
+    if (require_all && !all(selected %in% basic_steps)) {
+      stop("Range ", range, " is not covered by the gradient reference")
+    }
+    mean(positions[basic_steps %in% selected])
+  }, numeric(1), USE.NAMES = FALSE)
+}
+
 #Function to compute ED between two mapping units for one LEC
 compute.ed <- function(mt2_steps, mu1, mu2) {
   
@@ -402,30 +433,10 @@ compute.ed <- function(mt2_steps, mu1, mu2) {
       
     } else {
       
-      #Converting the characters to numbers
-      mt2_values <- unlist(lapply(seq_along(split_vector), function(i) convert.bs(split_vector[[i]], i)))
-      
-      #Split the vector into vectors with single characters in a list
-      split_mu <- unlist(strsplit(mu2, ""))
-      
-      #Identifying the major type specific steps the first mapping unit falls in
-      mu_index <- which(unlist(split_vector) %in% split_mu)
-      
-      #Taking the mean of the value(s)
-      mt2 <- mean(mt2_values[mu_index])
-      
-      #Split the vector into vectors with single characters in a list
-      split_mu <- unlist(strsplit(mu1, ""))
-      
-      #Identifying the major type specific steps the second mapping unit falls in
-      mu_index <- which(unlist(split_vector) %in% split_mu)
-      
-      #Taking the mean of the value(s)
-      mt1 <- mean(mt2_values[mu_index])
-      
-      #Compute the absolute difference between
-      ed_distance <- abs(mt2 - mt1)
-      
+      #Use the same position calculation that is exported in type profiles.
+      positions <- gradient.positions(mt2_steps, c(mu1, mu2))
+      ed_distance <- abs(positions[2] - positions[1])
+
     }
     
     #Return the ecological distance
