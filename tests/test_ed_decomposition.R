@@ -3,22 +3,22 @@ source("script/ed_functions.R")
 source("script/ed_decomposition.R")
 
 fixture <- function(lecs = c("KA", "UF"), between = FALSE) {
-  mt <- if (between) c("A", "B") else c("A", "A")
+  ht <- if (between) c("A", "B") else c("A", "A")
   codes <- c("A-01", if (between) "B-01" else "A-02")
-  units <- data.frame(code = codes, mt = mt)
+  units <- data.frame(code = codes, ht = ht)
   lec <- matrix(rep(c("a", "b"), length(lecs)), 2, dimnames = list(codes, lecs))
   steps <- setNames(rep(list(c("a", "b")), length(lecs)), lecs)
   hlec <- rep(list(lecs), 2)
-  criteria <- data.frame(code = codes, mt = mt, deposits_present = 1,
+  criteria <- data.frame(code = codes, ht = ht, deposits_present = 1,
                          vegetated = 1, above_forest_line = 0,
                          ssg_helophytes = 0, ssg_trees = 0, ssg_removed = 0)
-  counts <- matrix(2, length(unique(mt)), length(lecs),
-                    dimnames = list(unique(mt), lecs))
-  list(units = units, lec = lec, mt_specific_list = list(steps, steps),
+  counts <- matrix(2, length(unique(ht)), length(lecs),
+                    dimnames = list(unique(ht), lecs))
+  list(units = units, lec = lec, ht_specific_list = list(steps, steps),
        hlec_dlec = hlec, hlec = hlec, dlec = list(character(), character()),
        dlec_without = list(character(), character()), criteria_data = criteria,
        correlation_lec = list(c("HA", "HM", "HH"), c("HR", "HH")),
-       mt_specific_number_minor_types = counts, mt_specific_number_mu = counts)
+       ht_specific_number_minor_types = counts, ht_specific_number_mu = counts)
 }
 explain <- function(x) {
   scalar <- do.call(compute.ed.ultimate, c(list(row = 1, col = 2), x))
@@ -31,7 +31,7 @@ explain <- function(x) {
 
 x <- fixture()
 stopifnot(identical(explain(x), c(KA = 1, UF = 1)))
-x$mt_specific_number_minor_types[,] <- 4
+x$ht_specific_number_minor_types[,] <- 4
 stopifnot(identical(explain(x), c(KA = 2, UF = 2)))
 x$lec[,] <- "a"
 stopifnot(identical(explain(x), c(no_difference = 0)))
@@ -39,7 +39,7 @@ x$lec[,] <- NA_character_
 stopifnot(identical(explain(x), c(no_difference = 0)))
 x <- fixture("KA")
 x$lec[, 1] <- c("A", "B")
-x$mt_specific_list <- rep(list(list(KA = c("A", "B"))), 2)
+x$ht_specific_list <- rep(list(list(KA = c("A", "B"))), 2)
 stopifnot(identical(explain(x), c(KA = 1)))
 
 # Overlapping correlation groups consume HH once, and retain other LECs.
@@ -114,7 +114,7 @@ expect_error(lookup.ed.decomposition("A-01", "A-02", data.frame()))
 # A failed calculation must not replace previously generated outputs.
 checksums <- tools::md5sum(c(matrix_path, table_path))
 bad <- x
-bad$mt_specific_number_minor_types[,] <- Inf
+bad$ht_specific_number_minor_types[,] <- Inf
 expect_error(do.call(write.ed.outputs, c(bad, list(matrix_path = matrix_path, decomposition_path = table_path))))
 stopifnot(identical(checksums, tools::md5sum(c(matrix_path, table_path))),
           length(list.files(dir)) == 2L)

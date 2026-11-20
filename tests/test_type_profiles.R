@@ -21,10 +21,10 @@ reference <- create.shared.reference(c(KA = "abc", ST = "0AB", UF = "ac"))
 stopifnot(identical(reference$basic_step[reference$category == "UF"], c("a", "c")),
           identical(reference$position[reference$category == "UF"], 1:2),
           !"ST" %in% reference$category)
-units <- data.frame(code = c("A01-01", "A01-02", "B01-01"), mt = c("A01", "A01", "B01"))
+units <- data.frame(code = c("A01-01", "A01-02", "B01-01"), ht = c("A01", "A01", "B01"))
 lecs <- data.frame(KA = c("ab", "bc", "ab"), ST = c("0", "A", "B"))
 sources <- data.frame(KA = c("individual", "major_type", "major_type_group"), ST = "individual")
-criteria <- data.frame(code = units$code, mt = units$mt, above_forest_line = c(0, NA, 1))
+criteria <- data.frame(code = units$code, ht = units$ht, above_forest_line = c(0, NA, 1))
 steps <- list(list(KA = c("a", "b", "c"), ST = c("0", "A", "B")),
               list(KA = c("a", "b", "c"), ST = c("0", "A", "B")),
               list(KA = c("ab", "c"), ST = c("0", "A", "B")))
@@ -63,7 +63,7 @@ expect_error(reclassify.types(units$code, "KA", rbind(profiles, profiles)))
 expect_error(create.type.profiles(units, lecs, sources, criteria[3:1, ], steps, reference, minor, mapping))
 
 # Provenance follows aggregation membership, including exclusions and mixed sources.
-base_units <- data.frame(mt = c("A01", "A01", "A01", "B01"), scale_005 = c("01", "01", "#", "01"))
+base_units <- data.frame(ht = c("A01", "A01", "A01", "B01"), scale_005 = c("01", "01", "#", "01"))
 base_sources <- data.frame(KA = c("individual", "major_type", "major_type_group", "major_type_group"),
                             UF = c(NA, NA, "individual", "major_type"))
 a <- aggregate.profile.sources(base_units, base_sources, "scale_005", "A01")

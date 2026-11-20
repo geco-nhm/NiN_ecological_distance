@@ -11,6 +11,7 @@
   source("script/ed_functions.R")
   source("script/ed_decomposition.R")
   source("script/type_profiles.R")
+  source("script/ed_levels.R")
 
   #Run this script from the repository root
   dir.create("output", showWarnings = FALSE)
@@ -19,7 +20,7 @@
   data_0005 <- read_xlsx(path = "input/NiN_3.0.1_Master_Clean.xlsx", sheet = "Typer", col_types = "text")
   
   #Import data for criteria
-  criteria_mt <- read.csv("input/NiN3_categorical_variables.csv")
+  criteria_ht <- read.csv("input/NiN3_categorical_variables.csv")
   
   #Convert to data frame
   data_0005 <- as.data.frame(data_0005)
@@ -34,19 +35,19 @@
   data_0005 <- data_0005[!is.na(data_0005$kortkode),]
   
   #Create a column for major type group
-  data_0005$mtg <- substr(x = data_0005$kortkode, start = 1, stop = 1)
+  data_0005$htg <- substr(x = data_0005$kortkode, start = 1, stop = 1)
   
   #Create a column for process category
   data_0005$pc <- substr(x = data_0005$kortkode, start = 2, stop = 2)
   
   #Create a column for major type
-  data_0005$mt <- sub(pattern = "-.*", replacement = "", x = data_0005$kortkode)
+  data_0005$ht <- sub(pattern = "-.*", replacement = "", x = data_0005$kortkode)
   
   #Create a column for NiN 2 major type
-  data_0005$nin2_mt <- sub(pattern = "-.*", replacement = "", x = data_0005$`F3MR-VS`)
+  data_0005$nin2_ht <- sub(pattern = "-.*", replacement = "", x = data_0005$`F3MR-VS`)
   
   #Create a column for NiN 2 major type group
-  data_0005$nin2_mtg <- substr(x = data_0005$`F3MR-VS`, start = 1, stop = 1)
+  data_0005$nin2_htg <- substr(x = data_0005$`F3MR-VS`, start = 1, stop = 1)
   
   #Create a column for NiN 2 mapping unit
   data_0005$nin2_mu <- sub(pattern = ".*-", replacement = "", x = data_0005$`F3MR-VS`)
@@ -54,7 +55,7 @@
   #Rename columns
   colnames(data_0005) <- c("long_code","code","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","def","17","nin2_code",
                       "18","19","mu","scale_005","20","21","scale_020","22","23","scale_050","24","25",
-                      "comments","mtg","pc","mt","nin2_mt","nin2_mtg","nin2_mu")
+                      "comments","htg","pc","ht","nin2_ht","nin2_htg","nin2_mu")
   
   #Repair the LC01-05 separator and exclude KA_w wherever its token occurs.
   data_0005$def <- clean.lec.definitions(data_0005$def)
@@ -69,7 +70,7 @@
   data_0005 <- data_0005[!grepl(pattern = "NA-", x = data_0005$code),]
   
   #Retain the desired columns
-  units_0005 <- data_0005[,c("code","mtg","mt","mu","pc","scale_005","scale_020","scale_050","nin2_mtg","nin2_mt","nin2_mu")]
+  units_0005 <- data_0005[,c("code","htg","ht","mu","pc","scale_005","scale_020","scale_050","nin2_htg","nin2_ht","nin2_mu")]
   
   #Remove zeros that come right before another number
   units_0005[,c("scale_005","scale_020","scale_050")] <- as.data.frame(lapply(units_0005[,c("scale_005","scale_020","scale_050")], function(x) gsub("0(?=[0-9])", "", x, perl = TRUE)))
@@ -80,7 +81,7 @@
 data_0005
 
 #Data frame for criteria
-criteria_mt
+criteria_ht
 
 #Data frame with all units and aggregations
 units_0005
@@ -167,31 +168,31 @@ units_0005
   
   
   #Apply the function
-  dlec_mt <- retain.dlecs(data_0005_dlec)
+  dlec_ht <- retain.dlecs(data_0005_dlec)
   
   #Remove "NA-" from the string
-  names(dlec_mt) <- sub(pattern = "NA-", replacement = "", x = names(dlec_mt))
+  names(dlec_ht) <- sub(pattern = "NA-", replacement = "", x = names(dlec_ht))
   
   #Keep only elements with one character
-  lec_mtg <- dlec_mt[nchar(names(dlec_mt)) == 1]
+  lec_htg <- dlec_ht[nchar(names(dlec_ht)) == 1]
   
   #Create list with elements corresponding to major types
-  lec_mtg <- strsplit(x = lec_mtg, split = ",")
+  lec_htg <- strsplit(x = lec_htg, split = ",")
   
   #Apply function to remove everything after "_" in each element
-  lec_mtg <- lapply(lec_mtg, function(x) sub(" ", "", x))
+  lec_htg <- lapply(lec_htg, function(x) sub(" ", "", x))
   
   #Remove elements with only one character (major-type groups)
-  dlec_mt <- dlec_mt[nchar(names(dlec_mt)) > 1]
+  dlec_ht <- dlec_ht[nchar(names(dlec_ht)) > 1]
   
   #Create list with elements corresponding to major types
-  dlec_mt <- strsplit(x = dlec_mt, split = ",")
+  dlec_ht <- strsplit(x = dlec_ht, split = ",")
   
   #Apply function to remove spaces
-  dlec_mt <- lapply(dlec_mt, function(x) sub(" ", "", x))
+  dlec_ht <- lapply(dlec_ht, function(x) sub(" ", "", x))
   
   #Create a vector from the list
-  dlec_strings <- unlist(dlec_mt)
+  dlec_strings <- unlist(dlec_ht)
   
   #Remove spaces
   dlec_strings <- sub(pattern = " ", replacement = "", x = dlec_strings)
@@ -208,18 +209,18 @@ units_0005
   
   
   #Identify unique major types
-  unique_mt <- unique(units_0005$mt)
+  unique_ht <- unique(units_0005$ht)
   
   #Apply function to remove everything after "_" in each element
-  dlec_lec <- lapply(dlec_mt, function(x) sub("_.*", "", x))
+  dlec_lec <- lapply(dlec_ht, function(x) sub("_.*", "", x))
   
   #Apply the function for each major type
-  dlec_0005 <- lapply(seq_along(unique_mt), function(i) {
+  dlec_0005 <- lapply(seq_along(unique_ht), function(i) {
     
     #Select the current major type, hLECs, and dLECs
-    current_mt <- which(units_0005$mt %in% unique_mt[i])
-    current_hlec <- hlec_0005[current_mt]
-    current_dlec <- dlec_mt[unique_mt[i]]
+    current_ht <- which(units_0005$ht %in% unique_ht[i])
+    current_hlec <- hlec_0005[current_ht]
+    current_dlec <- dlec_ht[unique_ht[i]]
     
     #Merge the hLECs with the dLECs
     current_hlec_dlec <- lapply(current_hlec, function(x) current_dlec[[1]])
@@ -237,12 +238,12 @@ units_0005
   
   
   #Apply function to merge hLECs and dLECs for each major type
-  hlec_dlec_0005 <- lapply(seq_along(unique_mt), function(i) {
+  hlec_dlec_0005 <- lapply(seq_along(unique_ht), function(i) {
     
     #Select the current major type, hLECs, and dLECs
-    current_mt <- which(units_0005$mt %in% unique_mt[i])
-    current_hlec <- hlec_0005[current_mt]
-    current_dlec <- dlec_lec[unique_mt[i]]
+    current_ht <- which(units_0005$ht %in% unique_ht[i])
+    current_hlec <- hlec_0005[current_ht]
+    current_dlec <- dlec_lec[unique_ht[i]]
     
     #Merge the hLECs with the dLECs
     current_hlec_dlec <- lapply(current_hlec, function(x) c(x, current_dlec[[1]]))
@@ -263,22 +264,22 @@ units_0005
   
   
   #Create list to store criteria for mapping units within every major type
-  criteria_list <- lapply(1:nrow(criteria_mt), function(i) {
+  criteria_list <- lapply(1:nrow(criteria_ht), function(i) {
     
     #Find the relevnat major type
-    current_mt <- which(units_0005[,"mt"] %in% criteria_mt[i,"mt"])
+    current_ht <- which(units_0005[,"ht"] %in% criteria_ht[i,"ht"])
     
     #Create a matrix with the criteria for the relevant major type
-    current_data <- matrix(data = criteria_mt[i,], 
-                           nrow = length(current_mt), 
-                           ncol = ncol(criteria_mt), 
+    current_data <- matrix(data = criteria_ht[i,],
+                           nrow = length(current_ht),
+                           ncol = ncol(criteria_ht),
                            byrow = TRUE)
     
     #Convert the matrix to a data frame
     current_data <- as.data.frame(current_data)
     
     #Rename the columns
-    colnames(current_data) <- colnames(criteria_mt)
+    colnames(current_data) <- colnames(criteria_ht)
     
     #Return the data frame
     return(current_data)
@@ -322,10 +323,10 @@ dlec_without_0005
 lec_0005
 
 #List of LECs for major-type groups (not to be taken into account between major types within the same major type or within major types)
-lec_mtg
+lec_htg
 
 #List of dLECs with steps for each major type (to be taken into account between major types)
-dlec_mt
+dlec_ht
 
 
 #All LECs
@@ -407,17 +408,17 @@ cor_lec
 
   #For dLECs
   #Loop through each element in the list
-  for (i in seq_along(dlec_mt)) {
+  for (i in seq_along(dlec_ht)) {
     
     #Identify the current major type
-    current_mt <- names(dlec_mt)[i]
+    current_ht <- names(dlec_ht)[i]
     
     #Identify the current mapping units
-    current_mu <- which(units_0005$mt %in% current_mt)
+    current_mu <- which(units_0005$ht %in% current_ht)
     
     #Identify the relevant LECs
     #Remove spaces
-    current_lec <- sub(pattern = " ", replacement = "", x = dlec_mt[[i]])
+    current_lec <- sub(pattern = " ", replacement = "", x = dlec_ht[[i]])
     
     #Remove everything before the underscore
     current_lec_values <- sub(pattern = ".*_", replacement = "", x = current_lec)
@@ -460,17 +461,17 @@ cor_lec
 
   #For major_type groups
   #Loop through each element in the list
-  for (i in seq_along(lec_mtg)) {
+  for (i in seq_along(lec_htg)) {
     
     #Identify the current major type
-    current_mtg <- names(lec_mtg)[i]
+    current_htg <- names(lec_htg)[i]
     
     #Identify the current mapping units
-    current_mu <- which(units_0005$mtg %in% current_mtg)
+    current_mu <- which(units_0005$htg %in% current_htg)
     
     #Identify the relevant LECs
     #Remove spaces
-    current_lec <- sub(pattern = " ", replacement = "", x = lec_mtg[[i]])
+    current_lec <- sub(pattern = " ", replacement = "", x = lec_htg[[i]])
     
     #Remove everything before the underscore
     current_lec_values <- sub(pattern = ".*_", replacement = "", x = current_lec)
@@ -557,367 +558,46 @@ factor_lec
 
 
 
-# Aggregate from minor types to 1.5000 mapping units ----
-{
-  
-  #Select the desired scale, other possibilities are "scale_020" and "scale_050"
-  aggregation_scale <- "scale_005"
-  
-  #Identify major types
-  unique_mt <- unique(units_0005$mt)
-  
-  #Aggregate the units
-  units_005 <- lapply(unique_mt, function(mt) aggregate.scale.units(units_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  units_005 <- do.call(rbind, units_005) 
-  
-  #Aggregate the LEC steps
-  lecs_005 <- lapply(unique_mt, function(mt) aggregate.scale.lecs(units_0005, lecs_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  lecs_005 <- do.call(rbind, lecs_005)
-  
-  #Aggregate the criteria
-  criteria_005 <- lapply(unique_mt, function(mt) aggregate.scale.criteria(units_0005, criteria_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  criteria_005 <- do.call(rbind, criteria_005)
-  
-  
-  #Aggregate lists to 1.5000
-  #Aggregate dLECs
-  dlec_without_005 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, dlec_without_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  dlec_without_005 <- do.call(c, dlec_without_005)
-  
-  #Aggregate combined hLECs and dLECs
-  hlec_dlec_005 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, hlec_dlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  hlec_dlec_005 <- do.call(c, hlec_dlec_005)
-  
-  #Aggregate hLECs
-  hlec_005 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, hlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  hlec_005 <- do.call(c, hlec_005)
-  
-  #Aggregate bLECs
-  blec_005 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, blec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  blec_005 <- do.call(c, blec_005)
-  
-  
-  
-  
-  #Aggregate dLECs
-  dlec_005 <- lapply(unique_mt, function(mt) aggregate.lec.list(units_0005, dlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  dlec_005 <- do.call(c, dlec_005)
-  
-  #Aggregate LECs
-  lec_005 <- lapply(unique_mt, function(mt) aggregate.lec.list(units_0005, lec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  lec_005 <- do.call(c, lec_005)
-
-}
-
-#Codes for mapping units, major types, and major-type groups for 1.5000
-units_005
-
-#LEC values for each mapping unit in 1.5000
-lecs_005
-
-
-# Aggregate from minor types to 1.20000 mapping units ----
-{
-  
-  #Select the desired scale, other possibilities are "scale_020" and "scale_050"
-  aggregation_scale <- "scale_020"
-  
-  #Identify major types
-  unique_mt <- unique(units_0005$mt)
-  
-  #Aggregate the units
-  units_020 <- lapply(unique_mt, function(mt) aggregate.scale.units(units_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  units_020 <- do.call(rbind, units_020) 
-  
-  #Aggregate the LEC steps
-  lecs_020 <- lapply(unique_mt, function(mt) aggregate.scale.lecs(units_0005, lecs_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  lecs_020 <- do.call(rbind, lecs_020)
-  
-  #Aggregate the criteria
-  criteria_020 <- lapply(unique_mt, function(mt) aggregate.scale.criteria(units_0005, criteria_0005, aggregation_scale, mt))
-  
-  #Create a list from the data frame
-  criteria_020 <- do.call(rbind, criteria_020)
-  
-  
-  #Aggregate lists to 1.5000
-  #Aggregate dLECs
-  dlec_without_020 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, dlec_without_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  dlec_without_020 <- do.call(c, dlec_without_020)
-  
-  #Aggregate combined hLECs and dLECs
-  hlec_dlec_020 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, hlec_dlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  hlec_dlec_020 <- do.call(c, hlec_dlec_020)
-  
-  #Aggregate hLECs
-  hlec_020 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, hlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  hlec_020 <- do.call(c, hlec_020)
-  
-  #Aggregate bLECs
-  blec_020 <- lapply(unique_mt, function(mt) aggregate.list(units_0005, blec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  blec_020 <- do.call(c, blec_020)
-  
-  
-  
-  
-  #Aggregate dLECs
-  dlec_020 <- lapply(unique_mt, function(mt) aggregate.lec.list(units_0005, dlec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  dlec_020 <- do.call(c, dlec_020)
-  
-  #Aggregate LECs
-  lec_020 <- lapply(unique_mt, function(mt) aggregate.lec.list(units_0005, lec_0005, aggregation_scale, mt))
-  
-  #Unlist the list by one level
-  lec_020 <- do.call(c, lec_020)
-  
-}
-
-
-#Codes for mapping units, major types, and major-type groups for 1.20000
-units_020
-
-#LEC values for each mapping unit in 1.20000
-lecs_020
-
-# Identify major type specific groups for each 1.5000 mapping unit ----
-{
-  
-  #Create nested list
-  mt_specific_005 <- create.template.list(length(units_005$mt), ncol(lecs_005), units_005$mt, colnames(lecs_005))
-  
-  #Identify unique mapping units
-  unique_codes <- unique(units_005$mt)
-  
-  #Loop over all major types
-  for (k in 1:length(unique_codes)) {
-    
-    #Select the major type
-    current_mt <- unique_codes[k]
-    
-    #Identify the mapping units for the major type
-    current_elements <- which(units_005$mt %in% current_mt)
-    
-    #Create a data frame for the major type
-    current_data <- lecs_005[current_elements,]
-    
-    #Loop over all LECs
-    for (j in 1:ncol(current_data)) {
-      
-      #Loop over all mapping units
-      for (i in current_elements) {
-        
-        #Select LEC
-        current_lec <- colnames(current_data)[j]
-        
-        #Select LEC steps for the mapping unit
-        current_lec_values <- current_data[,j]
-        
-        #Identify the major-type specific steps for the LEC
-        mt_specific_steps <- find.mt.steps(current_lec_values)
-        
-        #Remove the letters in common from the step with most symbols
-        mt_specific_steps <- as.character(remove.common.bs(mt_specific_steps))
-        
-        #Sort the elements aplhabetically
-        mt_specific_steps <- sort(mt_specific_steps)
-        
-        #If there are any major-type specific steps
-        if(length(mt_specific_steps) > 0) {
-          
-          #Identify the major-type specific steps for the LEC
-          mt_specific_005[[i]][[current_lec]] <- add.border.bs(lec_steps[current_lec], mt_specific_steps)
-        }
-      }
-    }
-    
-    #Print progress bar
-    print(k/length(unique_codes))
-  }
-  
-  #Find the number of major-type specific steps for each major type
-  mt_specific_number_0005 <- lapply(unique_mt, identify.mt.specific.number, units_0005, lecs_0005)
-  
-  #Bind the lists to a matrix
-  mt_specific_number_0005 <- do.call(rbind, mt_specific_number_0005)
-  
-  #Convert to data frame
-  mt_specific_number_0005 <- as.data.frame(mt_specific_number_0005)
-  
-  #Rename columns
-  colnames(mt_specific_number_0005) <- unique_strings
-  
-  #Rename rows
-  rownames(mt_specific_number_0005) <- unique_mt
-  
-  
-  
-  #Find the number of major-type specific steps for each major type
-  mt_specific_number_005 <- lapply(unique_mt, identify.mt.specific.number, units_005, lecs_005)
-  
-  #Bind the lists to a matrix
-  mt_specific_number_005 <- do.call(rbind, mt_specific_number_005)
-  
-  #Convert to data frame
-  mt_specific_number_005 <- as.data.frame(mt_specific_number_005)
-  
-  #Rename columns
-  colnames(mt_specific_number_005) <- unique_strings
-  
-  #Rename rows
-  rownames(mt_specific_number_005) <- unique_mt
-}
-
-#Nested list with major-type specific groups for each LEC within each major type
-mt_specific_005
-
-#Data frame with number of major-type specific steps for 1.500 each major type
-mt_specific_number_0005
-
-#Data frame with number of major-type specific steps for 1.5000 for each major type
-mt_specific_number_005
-
-# Identify major type specific groups for each 1.20000 mapping unit ----
-{
-  
-  #Create nested list
-  mt_specific_020 <- create.template.list(length(units_020$mt), ncol(lecs_020), units_020$mt, colnames(lecs_020))
-  
-  #Identify unique mapping units
-  unique_codes <- unique(units_020$mt)
-  
-  #Loop over all major types
-  for (k in 1:length(unique_codes)) {
-    
-    #Select the major type
-    current_mt <- unique_codes[k]
-    
-    #Identify the mapping units for the major type
-    current_elements <- which(units_020$mt %in% current_mt)
-    
-    #Create a data frame for the major type
-    current_data <- lecs_020[current_elements,]
-    
-    #Loop over all LECs
-    for (j in 1:ncol(current_data)) {
-      
-      #Loop over all mapping units
-      for (i in current_elements) {
-        
-        #Select LEC
-        current_lec <- colnames(current_data)[j]
-        
-        #Select LEC steps for the mapping unit
-        current_lec_values <- current_data[,j]
-        
-        #Identify the major-type specific steps for the LEC
-        mt_specific_steps <- find.mt.steps(current_lec_values)
-        
-        #Remove the letters in common from the step with most symbols
-        mt_specific_steps <- as.character(remove.common.bs(mt_specific_steps))
-        
-        #Sort the elements aplhabetically
-        mt_specific_steps <- sort(mt_specific_steps)
-        
-        #If there are any major-type specific steps
-        if(length(mt_specific_steps) > 0) {
-          
-          #Identify the major-type specific steps for the LEC
-          mt_specific_020[[i]][[current_lec]] <- add.border.bs(lec_steps[current_lec], mt_specific_steps)
-        }
-      }
-    }
-    
-    #Print progress bar
-    print(k/length(unique_codes))
-  }
-  
-  
-  #Find the number of major-type specific steps for each major type
-  mt_specific_number_020 <- lapply(unique_mt, identify.mt.specific.number, units_020, lecs_020)
-  
-  #Bind the lists to a matrix
-  mt_specific_number_020 <- do.call(rbind, mt_specific_number_020)
-  
-  #Convert to data frame
-  mt_specific_number_020 <- as.data.frame(mt_specific_number_020)
-  
-  #Rename columns
-  colnames(mt_specific_number_020) <- unique_strings
-  
-  #Rename rows
-  rownames(mt_specific_number_020) <- unique_mt
-}
-
-#Nested list with major-type specific groups for each LEC within each major type
-mt_specific_020
-
-#Data frame with number of major-type specific steps for 1.20000 for each major type
-mt_specific_number_020
-
-
-# Export type profiles, and optionally calculate distances and decompositions ----
+# Export all supported levels through the same preparation/calculation path ----
+base <- list(units = units_0005, lec = lecs_0005, sources = lec_sources_0005,
+             criteria_data = criteria_0005, hlec_dlec = hlec_dlec_0005,
+             hlec = hlec_0005, dlec = dlec_0005, dlec_without = dlec_without_0005,
+             correlation_lec = cor_lec)
+minor_counts <- count.ht.steps(base$units, base$lec)
 shared_reference <- create.shared.reference(lec_steps)
-write.csv(shared_reference, "output/lec_reference_steps.csv", row.names = FALSE)
-profiles_only <- "--profiles-only" %in% commandArgs(trailingOnly = TRUE)
-for (scale in c("005", "020")) {
-  profile_sources <- do.call(rbind, lapply(unique_mt, function(mt) {
-    aggregate.profile.sources(units_0005, lec_sources_0005, paste0("scale_", scale), mt)
-  }))
+dir.create("output/shared", recursive = TRUE, showWarnings = FALSE)
+reference_con <- gzfile("output/shared/lec_reference_steps.csv.gz", "wt")
+tryCatch(write.csv(shared_reference, reference_con, row.names = FALSE), finally = close(reference_con))
+arguments <- commandArgs(trailingOnly = TRUE)
+profiles_only <- "--profiles-only" %in% arguments
+selection <- grep("^--levels=", arguments, value = TRUE)
+levels <- if (length(selection)) strsplit(sub("^--levels=", "", selection[1]), ",")[[1]] else c("005", "020", "050", "gt", "ht", "htg")
+if (!length(levels) || any(!levels %in% c("005", "020", "050", "gt", "ht", "htg"))) stop("Choose levels from 005,020,050,gt,ht,htg")
+for (level in unique(levels)) {
+  output_dir <- file.path("output", level)
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  # Prepare the information available at the requested classification level
+  if (level %in% c("ht", "htg")) {
+    data <- prepare.ed.hierarchy(level, base, dlec_ht, lec_htg, criteria_ht, lec_steps)
+  } else {
+    data <- prepare.ed.level(level, base, lec_steps, minor_counts)
+  }
+  message("Level ", level, ": ", nrow(data$units), " types")
   profiles <- create.type.profiles(
-    units = get(paste0("units_", scale)), lec = get(paste0("lecs_", scale)),
-    sources = profile_sources, criteria_data = get(paste0("criteria_", scale)),
-    mt_specific_list = get(paste0("mt_specific_", scale)),
+    units = data$units, lec = data$lec, sources = data$sources,
+    criteria_data = data$criteria_data, ht_specific_list = data$ht_specific_list,
     shared_reference = shared_reference,
-    mt_specific_number_minor_types = mt_specific_number_0005,
-    mt_specific_number_mu = get(paste0("mt_specific_number_", scale))
+    ht_specific_number_minor_types = data$ht_specific_number_minor_types,
+    ht_specific_number_mu = data$ht_specific_number_mu
   )
-  write.csv(profiles, paste0("output/type_profiles_", scale, ".csv"), row.names = FALSE)
-  if (!profiles_only) write.ed.outputs(
-    units = get(paste0("units_", scale)),
-    lec = get(paste0("lecs_", scale)),
-    mt_specific_list = get(paste0("mt_specific_", scale)),
-    hlec_dlec = get(paste0("hlec_dlec_", scale)),
-    hlec = get(paste0("hlec_", scale)),
-    dlec = get(paste0("dlec_", scale)),
-    dlec_without = get(paste0("dlec_without_", scale)),
-    criteria_data = get(paste0("criteria_", scale)),
-    correlation_lec = cor_lec,
-    mt_specific_number_minor_types = mt_specific_number_0005,
-    mt_specific_number_mu = get(paste0("mt_specific_number_", scale)),
-    matrix_path = paste0("output/ed_matrix_", scale, ".csv"),
-    decomposition_path = paste0("output/ed_decomposition_", scale, ".csv"),
-    workers = as.integer(Sys.getenv("NIN_WORKERS", "1"))
-  )
+  profile_con <- gzfile(file.path(output_dir, paste0("type_profiles_", level, ".csv.gz")), "wt")
+  tryCatch(write.csv(profiles, profile_con, row.names = FALSE), finally = close(profile_con))
+  if (!profiles_only) {
+    do.call(write.ed.outputs, c(data[setdiff(names(data), "sources")], list(
+      matrix_path = file.path(output_dir, paste0("ed_matrix_", level, ".csv.gz")),
+      decomposition_path = file.path(output_dir, paste0("ed_decomposition_", level, ".csv.gz")),
+      component_path = file.path(output_dir, paste0("ed_components_", level, ".csv.gz")),
+      workers = as.integer(Sys.getenv("NIN_WORKERS", "1"))
+    )))
+  }
 }

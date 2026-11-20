@@ -1,8 +1,8 @@
-# Export additive explanations using the same functions as the distance matrix.
-write.ed.outputs <- function(units, lec, mt_specific_list, hlec_dlec, hlec,
+# Export distance matrices, decompositions, and component inventories ----
+write.ed.outputs <- function(units, lec, ht_specific_list, hlec_dlec, hlec,
                              dlec, dlec_without, criteria_data, correlation_lec,
-                             mt_specific_number_minor_types, mt_specific_number_mu,
-                             matrix_path, decomposition_path, workers = 1L) {
+                             ht_specific_number_minor_types, ht_specific_number_mu,
+                             matrix_path, decomposition_path, workers = 1L, component_path = NULL) {
   if (!is.numeric(workers) || length(workers) != 1L || !is.finite(workers) ||
       workers < 1 || workers != as.integer(workers)) {
     stop("workers must be a positive integer")
@@ -15,13 +15,14 @@ write.ed.outputs <- function(units, lec, mt_specific_list, hlec_dlec, hlec,
   # Numeric matrices avoid repeatedly performing data-frame arithmetic per pair.
   units <- as.matrix(units)
   lec <- as.matrix(lec)
-  criteria_data <- cbind(code = 0, mt = 0, as.matrix(criteria_data[, -(1:2)]))
+  criteria_data <- cbind(code = 0, ht = 0, as.matrix(criteria_data[, -(1:2)]))
   storage.mode(criteria_data) <- "numeric"
-  mt_specific_number_minor_types <- as.matrix(mt_specific_number_minor_types)
-  mt_specific_number_mu <- as.matrix(mt_specific_number_mu)
+  ht_specific_number_minor_types <- as.matrix(ht_specific_number_minor_types)
+  ht_specific_number_mu <- as.matrix(ht_specific_number_mu)
   n <- length(codes)
   if (!n) stop("No types to compare")
   matrix <- matrix(0, n, n, dimnames = list(codes, codes))
+  component_counts <- numeric()
   matrix_tmp <- tempfile("ed-matrix-", tmpdir = dirname(matrix_path))
   decomposition_tmp <- tempfile("ed-components-", tmpdir = dirname(decomposition_path))
   con <- if (endsWith(decomposition_path, ".gz")) {
@@ -37,9 +38,9 @@ write.ed.outputs <- function(units, lec, mt_specific_list, hlec_dlec, hlec,
   calculate_row <- function(i) {
     pairs <- lapply(seq_len(n), function(j) {
       result <- compute.ed.ultimate(
-        i, j, units, lec, mt_specific_list, hlec_dlec, hlec, dlec,
+        i, j, units, lec, ht_specific_list, hlec_dlec, hlec, dlec,
         dlec_without, criteria_data, correlation_lec,
-        mt_specific_number_minor_types, mt_specific_number_mu, decompose = TRUE
+        ht_specific_number_minor_types, ht_specific_number_mu, decompose = TRUE
       )
       if (!is.finite(result$total) || result$total < 0 ||
           any(!is.finite(result$contributions)) ||
@@ -76,6 +77,10 @@ write.ed.outputs <- function(units, lec, mt_specific_list, hlec_dlec, hlec,
       i <- indices[k]
       if (inherits(rows[[k]], "try-error")) stop(rows[[k]])
       matrix[i, ] <- rows[[k]]$total
+      observed <- table(rows[[k]]$table$component)
+      missing <- setdiff(names(observed), names(component_counts))
+      component_counts[missing] <- 0
+      component_counts[names(observed)] <- component_counts[names(observed)] + as.numeric(observed)
       write.table(rows[[k]]$table, con, sep = ",", row.names = FALSE,
                   col.names = i == 1L, quote = TRUE)
     }
@@ -83,13 +88,31 @@ write.ed.outputs <- function(units, lec, mt_specific_list, hlec_dlec, hlec,
   }
   close(con)
   con <- NULL
-  write.csv(round(as.data.frame(matrix), 1), matrix_tmp)
+  matrix_con <- if (endsWith(matrix_path, ".gz")) gzfile(matrix_tmp, "wt") else file(matrix_tmp, "wt")
+  tryCatch(write.csv(round(as.data.frame(matrix), 1), matrix_con),
+           finally = close(matrix_con))
   if (!file.rename(decomposition_tmp, decomposition_path)) stop("Cannot save decomposition table")
   if (!file.rename(matrix_tmp, matrix_path)) stop("Cannot save distance matrix")
+  if (!is.null(component_path)) {
+    components <- sort(names(component_counts))
+    family <- rep("lec", length(components))
+    family[components %in% colnames(criteria_data)[-(1:2)]] <- "criterion"
+    family[startsWith(components, "correlated_LECs:")] <- "correlated_lecs"
+    family[startsWith(components, "defining_LEC:")] <- "defining_lec"
+    family[components == "defining_LEC_correlation_adjustment"] <- "adjustment"
+    family[components == "no_shared_LECs"] <- "penalty"
+    family[components == "no_difference"] <- "zero"
+    lec_codes <- sub("^(correlated_LECs:|defining_LEC:)", "", components)
+    lec_codes[!family %in% c("lec", "correlated_lecs", "defining_lec")] <- NA_character_
+    component_con <- if (endsWith(component_path, ".gz")) gzfile(component_path, "wt") else file(component_path, "wt")
+    tryCatch(write.csv(data.frame(component = components, family = family, lec_codes = lec_codes,
+                         row_count = as.numeric(component_counts[components])),
+              component_con, row.names = FALSE), finally = close(component_con))
+  }
   invisible(matrix)
 }
 
-# Match two equally sized vectors, preserving their order, repeats and direction.
+# Look up distances for paired type vectors ----
 lookup.ed.decomposition <- function(type_a, type_b, decomposition) {
   type_a <- as.character(type_a)
   type_b <- as.character(type_b)

@@ -1,3 +1,5 @@
+For practical analyst examples, see [Using the outputs](../USING_OUTPUTS.md).
+
 This folder contains the R script for generating ecological distance matrices.
 
 Run from the repository root with the R packages `readxl` and `pbapply` installed:
@@ -7,10 +9,20 @@ Rscript script/create_ed_matrix.R
 ```
 
 The script reads `input/NiN_3.0.1_Master_Clean.xlsx` (the `Typer` sheet) and
-`input/NiN3_categorical_variables.csv`, and writes both scales to
-`output/ed_matrix_005.csv` and `output/ed_matrix_020.csv`, plus
-`output/ed_decomposition_005.csv` and `output/ed_decomposition_020.csv`.
-The function definitions live in `ed_functions.R`; exporting and paired-vector
+`input/NiN3_categorical_variables.csv`. It exports these levels:
+
+| Suffix | Level |
+| --- | --- |
+| `005` | 1:5,000 mapping units (673 units) |
+| `020` | 1:20,000 mapping units (405 units) |
+| `050` | 1:50,000 mapping units (242 units) |
+| `gt` | Minor types, retaining their input type codes (908 types) |
+
+For each suffix `<level>`, it writes `output/<level>/ed_matrix_<level>.csv.gz`,
+`output/<level>/ed_decomposition_<level>.csv.gz`, `output/<level>/type_profiles_<level>.csv.gz`,
+and `output/<level>/ed_components_<level>.csv.gz`.
+Level preparation lives in `ed_levels.R`. The function definitions live in
+`ed_functions.R`; exporting and paired-vector
 lookup live in `ed_decomposition.R`.
 
 Definitions ending in `(‒)` or `(-)` mean “and lower”. The script expands
@@ -36,7 +48,7 @@ Read a table and explain corresponding elements of two vectors:
 
 ```r
 source("script/ed_decomposition.R")
-parts <- read.csv("output/ed_decomposition_005.csv")
+parts <- read.csv("output/005/ed_decomposition_005.csv.gz")
 explanation <- lookup.ed.decomposition(
   type_a = c("TA01-01", "TA01-01"),
   type_b = c("TA01-02", "TB01-01"),
@@ -48,7 +60,8 @@ aggregate(contribution ~ pair_id, explanation, sum)
 
 The returned `pair_id` identifies the original vector position, including repeated
 pairs. Input vectors must have equal lengths and contain no missing codes; an
-unknown pair raises an error. Use a table from the same mapping scale as the maps.
+unknown pair raises an error. Use a table from the same mapping level as the maps. The same short code can
+represent different ecological ranges at different levels; do not mix levels.
 
 On Unix-like systems, set `NIN_WORKERS` to calculate batches in parallel:
 
@@ -63,8 +76,8 @@ after a scale finishes calculating and every pair passes the additivity check.
 Run the focused tests with `Rscript tests/test_ed_decomposition.R`. After generating
 outputs, run `Rscript tests/check_generated_outputs.R` to check every exported pair.
 
-Type profiles for reclassification are written to `output/type_profiles_005.csv`
-and `output/type_profiles_020.csv`. Read the file for the mapping scale of your
+Type profiles for reclassification are written to `output/<level>/type_profiles_<level>.csv.gz`.
+Read the file for the mapping level of your
 vector. Each type has a row for every LEC and categorical criterion, including
 undefined values. `range` retains the basic-step letters; `source` identifies
 `individual`, `major_type`, or `major_type_group`. Aggregated mapping units can
@@ -76,8 +89,8 @@ Two numerical reference options are available for gradient LECs:
 - `reference = "shared"` (default): mean of the 1-based ranks of the observed
   basic steps, ordered `0`, `a`, ..., `z`. Only observed steps receive ranks;
   gaps in the alphabet do not insert unobserved steps. The reference is based on
-  the full minor-type profiles and is identical for both mapping scales. Its
-  explicit mapping is saved as `output/lec_reference_steps.csv`.
+  the full minor-type profiles and is identical for all levels. Its
+  explicit mapping is saved as `output/shared/lec_reference_steps.csv.gz`.
 - `reference = "major_type"`: mean position using the type's own major-type
   adapted step partitions and the existing `convert.bs()` offsets. These
   positions are local to each major type. `major_type_steps` records the
@@ -94,7 +107,7 @@ type codes raise an error, and vector order, names, and repeated labels are kept
 
 ```r
 source("script/type_profiles.R")
-profiles <- read.csv("output/type_profiles_005.csv")
+profiles <- read.csv("output/005/type_profiles_005.csv.gz")
 types <- c("TA01-01", "TA01-02", "TB01-01", NA)
 
 reclassify.types(types, "KA", profiles, reference = "shared")
@@ -121,3 +134,68 @@ The import repairs LC01-05's malformed `[KA_w] VT_C` separator and applies the
 existing exclusion of `[KA_w]` as a whole token. LC01-05 consequently has VT_C
 and no KA value. The Excel source itself is preserved. This correction affects
 some distance/decomposition entries compared with the previous parser.
+
+Select levels to generate, optionally without pairwise calculation:
+
+```sh
+NIN_WORKERS=8 Rscript script/create_ed_matrix.R --levels=050,gt
+Rscript script/create_ed_matrix.R --profiles-only --levels=050,gt
+```
+
+All levels retain the existing ground/bottom-system scope of the input filter.
+At `gt`, the input minor-type ranges and lists are used directly; the ED scale
+adjustment is 1 for defined gradients. At mapping levels, minor types are grouped
+using the workbook's scale column. Missing aggregation codes and codes containing
+`*` or `#` are excluded. Major types without valid mapping units at a level are
+omitted. References are calculated once per major type and LEC using the same
+step-selection, overlap-removal, and border-step rules as previously.
+
+The component inventory for each level lists the observed `component`, its
+`family`, associated `lec_codes` (when applicable), and exported `row_count`.
+Families are `lec`, `correlated_lecs`, `defining_lec`, `criterion`, `adjustment`,
+`penalty`, and `zero`. These inventories are a basis for choosing which parts
+should contribute to future major-type (`ht`) and major-type-group (`htg`)
+distances. The ht and htg outputs use defining information only; see below. A joint correlation
+adjustment cannot automatically be assigned to an arbitrary subset of LECs.
+
+Run `Rscript tests/test_ed_levels.R` to check level preparation, exclusions, minor
+references, and component inventories. The generated-output checks cover every
+supported level.
+
+All generated CSVs are gzip-compressed. Files are organized in `output/005/`,
+`output/020/`, `output/050/`, and `output/gt/`; the shared reference is in
+`output/shared/`. R reads these files directly:
+
+```r
+parts <- read.csv("output/gt/ed_decomposition_gt.csv.gz")
+```
+
+Compression saves disk space and download bandwidth. Some spreadsheet and GIS
+applications require extracting the CSV first. Reading a compressed file adds
+some decompression work; loaded tables use the same memory as plain CSVs.
+
+### Major types and major-type groups
+
+`output/ht/` contains 124 major types; `output/htg/` contains six major-type
+groups. Both folders contain a matrix, decomposition, profile, and component
+inventory as `.csv.gz`. These calculations exclude minor-type hLECs. Major types
+use their defining LECs and categorical criteria; groups use their defining LECs
+with criteria unknown. The existing defining-set penalties and no-shared-LEC
+rule apply. These are direct calculations, not averages of minor-type distances.
+
+To generate only these levels, run:
+
+```sh
+Rscript script/create_ed_matrix.R --levels=ht,htg
+```
+
+The helper scripts use commented sections and named intermediate objects, following
+the structure of `create_ed_matrix.R`.
+
+### Hierarchy naming
+
+`ht` means major type (hovedtype), and `htg` means major-type group
+(hovedtypegruppe). These replace the former major-type abbreviations identifiers in the R
+code, criteria input header, output folders, and filenames. Profile fields using
+the English name `major_type` retain their spelling. Generalisation conversion
+lookups are not provided by this repository.

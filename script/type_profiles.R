@@ -1,5 +1,6 @@
 # Shared positions are 1-based ranks of observed gradient basic steps, ordered
 # 0, a, ..., z. Uppercase factor levels are never assigned gradient positions.
+# Create the shared basic-step reference ----
 create.shared.reference <- function(lec_steps) {
   rows <- lapply(names(lec_steps), function(category) {
     steps <- strsplit(lec_steps[[category]], "")[[1]]
@@ -18,11 +19,11 @@ create.shared.reference <- function(lec_steps) {
   result
 }
 
-# Follow the same aggregation groups and order as aggregate.scale.units/lecs.
-aggregate.profile.sources <- function(units, sources, agg_unit, mt) {
-  indices <- which(units$mt == mt & !grepl("[*#]", units[[agg_unit]]))
+# Aggregate range provenance for mapping units ----
+aggregate.profile.sources <- function(units, sources, agg_unit, ht) {
+  indices <- which(units$ht == ht & !grepl("[*#]", units[[agg_unit]]))
   groups <- units[[agg_unit]][indices]
-  if (anyNA(groups)) stop("Missing aggregation group for ", mt)
+  if (anyNA(groups)) stop("Missing aggregation group for ", ht)
   result <- lapply(unique(groups), function(group) {
     apply(sources[indices[groups == group], , drop = FALSE], 2, function(x) {
       x <- sort(unique(x[!is.na(x)]))
@@ -33,22 +34,23 @@ aggregate.profile.sources <- function(units, sources, agg_unit, mt) {
   do.call(rbind, result)
 }
 
-create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific_list,
-                                 shared_reference, mt_specific_number_minor_types,
-                                 mt_specific_number_mu, gradient_categories = c("KA")) {
+# Create ecological profiles for reclassification ----
+create.type.profiles <- function(units, lec, sources, criteria_data, ht_specific_list,
+                                 shared_reference, ht_specific_number_minor_types,
+                                 ht_specific_number_mu, gradient_categories = c("KA")) {
   lec <- as.matrix(lec)
   sources <- as.matrix(sources)
   normalize <- function(x) sub("-0", "-", as.character(x))
   if (nrow(units) != nrow(lec) || !identical(dim(lec), dim(sources)) ||
       !identical(colnames(lec), colnames(sources)) ||
-      length(mt_specific_list) != nrow(units) || anyDuplicated(units$code) ||
+      length(ht_specific_list) != nrow(units) || anyDuplicated(units$code) ||
       !identical(normalize(units$code), normalize(criteria_data$code)) ||
-      !identical(as.character(units$mt), as.character(criteria_data$mt))) {
+      !identical(as.character(units$ht), as.character(criteria_data$ht))) {
     stop("Type profile inputs are not aligned")
   }
   if (any(is.na(sources) & !is.na(lec))) stop("A defined range has no recorded source")
-  minor_counts <- as.matrix(mt_specific_number_minor_types)
-  mapping_counts <- as.matrix(mt_specific_number_mu)
+  minor_counts <- as.matrix(ht_specific_number_minor_types)
+  mapping_counts <- as.matrix(ht_specific_number_mu)
   rows <- lapply(colnames(lec), function(category) {
     ranges <- as.character(lec[, category])
     shared <- shared_reference[shared_reference$category == category, , drop = FALSE]
@@ -63,7 +65,7 @@ create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific
     local_status <- shared_status <- rep("undefined", nrow(units))
     local_steps <- rep(NA_character_, nrow(units))
     for (i in seq_len(nrow(units))) {
-      reference <- mt_specific_list[[i]][[category]]
+      reference <- ht_specific_list[[i]][[category]]
       if (length(reference)) local_steps[i] <- paste(reference, collapse = "|")
       if (is.na(ranges[i])) next
       if (kind[i] == "factor") {
@@ -74,8 +76,14 @@ create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific
         local_status[i] <- shared_status[i] <- "invalid_range"
         next
       }
-      shared_position[i] <- gradient.positions(shared$basic_step, ranges[i], require_all = TRUE)
-      shared_status[i] <- "ok"
+      # Coarse definitions can include basic steps absent from the shared reference
+      range_steps <- strsplit(ranges[i], "")[[1]]
+      if (all(range_steps %in% shared$basic_step)) {
+        shared_position[i] <- gradient.positions(shared$basic_step, ranges[i], require_all = TRUE)
+        shared_status[i] <- "ok"
+      } else {
+        shared_status[i] <- "outside_reference"
+      }
       if (!length(reference)) next
       if (any(grepl("[A-Z]", reference))) {
         local_status[i] <- if (category %in% gradient_categories) "invalid_reference" else "factor_reference"
@@ -83,11 +91,11 @@ create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific
       }
       local_position[i] <- gradient.positions(reference, ranges[i], require_all = TRUE)
       local_status[i] <- "ok"
-      adjustment[i] <- minor_counts[units$mt[i], category] /
-        mapping_counts[units$mt[i], category]
+      adjustment[i] <- minor_counts[units$ht[i], category] /
+        mapping_counts[units$ht[i], category]
     }
     data.frame(
-      type = as.character(units$code), major_type = as.character(units$mt),
+      type = as.character(units$code), major_type = as.character(units$ht),
       category = category, kind = kind, range = ranges, value = NA_real_,
       source = as.character(sources[, category]),
       position_major_type = local_position, position_shared = shared_position,
@@ -95,10 +103,10 @@ create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific
       major_type_status = local_status, shared_status = shared_status
     )
   })
-  criterion_rows <- lapply(setdiff(names(criteria_data), c("code", "mt")), function(category) {
+  criterion_rows <- lapply(setdiff(names(criteria_data), c("code", "ht")), function(category) {
     values <- as.numeric(criteria_data[[category]])
     data.frame(
-      type = as.character(units$code), major_type = as.character(units$mt),
+      type = as.character(units$code), major_type = as.character(units$ht),
       category = category, kind = "criterion", range = NA_character_, value = values,
       source = "major_type_criteria", position_major_type = NA_real_, position_shared = NA_real_,
       major_type_adjustment = NA_real_, major_type_steps = NA_character_,
@@ -110,7 +118,7 @@ create.type.profiles <- function(units, lec, sources, criteria_data, mt_specific
   result
 }
 
-# Select one category for a vector of map labels, retaining repeats and missing cells.
+# Reclassify a vector of type codes ----
 reclassify.types <- function(types, category, profiles,
                              reference = c("shared", "major_type"),
                              representation = c("position", "range")) {

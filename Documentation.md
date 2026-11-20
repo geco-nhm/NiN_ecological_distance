@@ -89,8 +89,9 @@ establish why an observer assigned a particular map label.
 Signed contributions sum to the unrounded ecological distance. The matrix stores
 that total rounded to one decimal place; independently rounding each contribution
 before summing can give a different result. The long tables contain every ordered
-pair, including self-pairs, and no separate total rows. Both scales are exported
-as plain CSV files that can be read directly with R's `read.csv()`.
+pair, including self-pairs, and no separate total rows. All levels are exported
+as gzip-compressed CSV files that can be read directly with R's `read.csv()`.
+Each level has its own folder under `output/`; shared references are in `output/shared/`.
 
 See `script/README.md` for paired-vector lookup examples.
 
@@ -106,8 +107,7 @@ For gradient LECs, `position_major_type` uses the same `convert.bs()` positions 
 ED, on the type's own adapted step reference. These local coordinates are not
 comparable across major types. They do not include `major_type_adjustment`, which
 is exported separately. The shared option, `position_shared`, averages the ordinal
-ranks of the observed basic steps on one reference per LEC, common to both mapping
-scales. The reference orders `0`, then `a` through `z`, skips unobserved steps, and
+ranks of the observed basic steps on one reference per LEC, common to all mapping levels and minor types. The reference orders `0`, then `a` through `z`, skips unobserved steps, and
 assigns ranks starting at 1. Equal ranges therefore have equal shared positions,
 regardless of major type. These are descriptive ranks, not calibrated environmental
 measurements or a replacement for the pairwise ecological-distance calculation.
@@ -128,6 +128,40 @@ gradient.
 
 See `script/README.md` for choosing the reference and reclassifying a vector.
 
+### Output levels and selecting components for ht and htg
+
+The same ecological-distance rules are exported for minor types (`gt`) and
+mapping units at 1:5,000 (`005`), 1:20,000 (`020`), and 1:50,000 (`050`). All
+levels retain the existing ground/bottom-system input filter. Minor
+types retain their input codes and ranges. Their major-type adapted steps are
+calculated at the minor-type level, so the scale-adjustment ratio is 1 wherever
+that ratio is defined. Mapping units use the workbook's aggregation membership;
+undefined memberships and `*`/`#` exclusions do not create mapping units.
+
+Every level has a matrix, a complete pairwise decomposition, a reclassification
+profile, and a component inventory (`ed_components_<level>.csv.gz`). The inventory
+lists terms actually observed in the decomposition, with their families, LECs,
+and row counts. The available families distinguish individual LEC differences,
+correlated-LEC groups, defining-LEC differences, categorical criteria, joint
+adjustments, structural penalties, and zero placeholders.
+
+Major types (`ht`, 124 codes) use their own defining LECs and major-type
+criteria. Major-type-group ranges fill otherwise undefined profile ranges.
+Major-type groups (`htg`, six codes) use only their group-defining LECs;
+categorical criteria remain unknown. Neither level inherits minor-type hLECs.
+The existing defining-LEC set penalties, correlation correction, and
+`no_shared_LECs` rule are retained. There are no ordinary hLEC gradient-distance
+terms at these levels and no averaging across constituent minor types. Thus a
+change to a minor type's hLEC position cannot change an ht or htg distance.
+Identical codes have distance zero; different codes can also have zero distance
+when the available defining information does not distinguish them.
+
+The hierarchy outputs use `output/ht/` and `output/htg/`, with the same four
+compressed CSV products as other levels. Profiles retain the common shared
+basic-step reference. Where a coarse range includes steps absent from that
+reference, its shared position is missing with status `outside_reference`;
+the range itself and its local position remain available.
+
 ### References
 
 Halvorsen, R., Skarpaas, O., Bryn, A., Bratli, H., Erikstad, L., Simensen, T., & Lieungh, E. (2020). Towards a systematics of ecodiversity: The EcoSyst framework. *Global Ecology and Biogeography*, 29(11), 1887–1906. <https://doi.org/10.1111/geb.13164>
@@ -136,3 +170,8 @@ Naas, A.E., Halvorsen, R., Horvath, P., Wollan, A.K., Bratli, H., Brynildsrud, K
 
 Eriksen, E.L., Ullerud, H.A., Halvorsen, R., Aune, S., Bratli, H., Horvath, P., Volden, I.K., Wollan, A.K., & Bryn, A. (2018). Point of view: Error estimation in field assignment of land-cover types. *Phytocoenologia*, 49(2), 135–148. <https://doi.org/10.1127/phyto/2018/0293>
 
+
+### Hierarchy naming
+
+`ht` means major type (hovedtype), and `htg` means major-type group
+(hovedtypegruppe).

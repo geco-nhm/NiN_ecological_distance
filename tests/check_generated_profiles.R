@@ -1,7 +1,7 @@
 # Run from the repository root after generating type profiles.
 source("script/ed_functions.R")
 source("script/type_profiles.R")
-reference <- read.csv("output/lec_reference_steps.csv")
+reference <- read.csv("output/shared/lec_reference_steps.csv.gz")
 stopifnot(!anyDuplicated(paste(reference$category, reference$basic_step)),
           all(reference$basic_step %in% c("0", letters)))
 for (category in unique(reference$category)) {
@@ -9,9 +9,12 @@ for (category in unique(reference$category)) {
   stopifnot(identical(x$position, seq_len(nrow(x))),
             identical(x$basic_step, c("0", letters)[c("0", letters) %in% x$basic_step]))
 }
-for (scale in c("005", "020")) {
-  profiles <- read.csv(paste0("output/type_profiles_", scale, ".csv"))
-  matrix <- read.csv(paste0("output/ed_matrix_", scale, ".csv"), row.names = 1, check.names = FALSE)
+levels <- commandArgs(trailingOnly = TRUE)
+if (!length(levels)) levels <- c("005", "020", "050", "gt", "ht", "htg")
+stopifnot(all(levels %in% c("005", "020", "050", "gt", "ht", "htg")))
+for (scale in levels) {
+  profiles <- read.csv(paste0("output/", scale, "/type_profiles_", scale, ".csv.gz"))
+  matrix <- read.csv(paste0("output/", scale, "/ed_matrix_", scale, ".csv.gz"), row.names = 1, check.names = FALSE)
   stopifnot(!anyDuplicated(paste(profiles$type, profiles$category)),
             setequal(unique(profiles$type), rownames(matrix)),
             all(profiles$kind %in% c("gradient", "factor", "criterion")),
@@ -48,6 +51,10 @@ for (scale in c("005", "020")) {
     stopifnot(nrow(ka) == 1, is.na(ka$range), is.na(ka$source),
               is.na(ka$position_shared), is.na(ka$position_major_type),
               vt$range == "C", vt$kind == "factor", vt$source == "individual")
+  }
+  if (scale == "gt") {
+    applicable <- profiles$major_type_status == "ok"
+    stopifnot(all(profiles$major_type_adjustment[applicable] == 1))
   }
   labels <- c(rownames(matrix)[1], NA, rownames(matrix)[1])
   for (option in c("shared", "major_type")) {

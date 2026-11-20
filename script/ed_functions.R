@@ -17,7 +17,7 @@ expand.lower.steps <- function(definitions) {
 
 
 #Define function to identify major-type specific steps
-find.mt.steps <- function(lec_vector) {
+find.ht.steps <- function(lec_vector) {
   
   #Identify all unique basic steps
   all_steps <- unique(unlist(strsplit(paste(lec_vector, collapse = ""), "")))
@@ -81,19 +81,19 @@ create.template.list <- function(n_inner, n_outer, outer_names = NULL, inner_nam
 }
 
 #Function to identify the number of major-type specific steps
-identify.mt.specific.number <- function(mt, units, lecs) {
+identify.ht.specific.number <- function(ht, units, lecs) {
   
   #Select the major type
-  current_mt <- mt
+  current_ht <- ht
   
   #Identify the mapping units for the major type
-  current_elements <- which(units$mt %in% current_mt)
+  current_elements <- which(units$ht %in% current_ht)
   
   #Create a data frame for the major type
-  current_data <- lecs[current_elements,]
+  current_data <- lecs[current_elements, , drop = FALSE]
   
   #Create vector to store the number of major-type specific steps
-  mt_specific_number <- numeric()
+  ht_specific_number <- numeric()
   
   #Loop over all LECs
   for (j in 1:ncol(current_data)) {
@@ -105,29 +105,29 @@ identify.mt.specific.number <- function(mt, units, lecs) {
     current_lec_values <- current_data[,j]
     
     #Identify the major-type specific steps for the LEC
-    mt_specific_steps <- find.mt.steps(current_lec_values)
+    ht_specific_steps <- find.ht.steps(current_lec_values)
     
     #Remove the letters in common from the step with most symbols
-    mt_specific_steps <- as.character(remove.common.bs(mt_specific_steps))
+    ht_specific_steps <- as.character(remove.common.bs(ht_specific_steps))
     
     #Sort the elements aplhabetically
-    mt_specific_steps <- sort(mt_specific_steps)
+    ht_specific_steps <- sort(ht_specific_steps)
     
     #If there are any major-type specific steps
-    if(length(mt_specific_steps) > 0) {
+    if(length(ht_specific_steps) > 0) {
       
       #Store the number of major-type specific steps
-      mt_specific_number[j] <- length(mt_specific_steps)
+      ht_specific_number[j] <- length(ht_specific_steps)
       
     } else {
       
       #Store NA
-      mt_specific_number[j] <- NA
+      ht_specific_number[j] <- NA
     }
   }
   
   #Return the number of major-type specific steps for the LEC
-  return(mt_specific_number)
+  return(ht_specific_number)
 }
 
 #Define function that keeps elements that have underscores (dLECs)
@@ -231,7 +231,7 @@ add.border.bs <- function(all_bs, lec_vector) {
   unique_bs_all <- unique(unlist(strsplit(all_bs[1], "")))
   
   #Find unique basic steps for the major type
-  unique_bs_mt <- unique(unlist(strsplit(paste(lec_vector, collapse = ""), "")))
+  unique_bs_ht <- unique(unlist(strsplit(paste(lec_vector, collapse = ""), "")))
   
   #Create vectors to store the basic steps coming after and before
   prepend_letters <- c()
@@ -241,15 +241,15 @@ add.border.bs <- function(all_bs, lec_vector) {
   for (i in unique_bs_all) {
     
     #Check if the basic step is already in the major type
-    if (!(i %in% unique_bs_mt)) {
+    if (!(i %in% unique_bs_ht)) {
       
       #Check order
-      if (length(unique_bs_mt) == 0 || i < min(unique_bs_mt)) {
+      if (length(unique_bs_ht) == 0 || i < min(unique_bs_ht)) {
         
         #Collect basic steps to prepend
         prepend_letters <- c(prepend_letters, i)
         
-      } else if (i > max(unique_bs_mt)) {
+      } else if (i > max(unique_bs_ht)) {
         
         #Collect basic steps to append
         append_letters <- c(append_letters, i)
@@ -478,7 +478,7 @@ decompose.defining.lecs <- function(definition_a, definition_b, adjusted_total) 
 }
 
 #Define function to compute ED for any pair of mapping units
-compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dlec, hlec, dlec, dlec_without, criteria_data, correlation_lec, mt_specific_number_minor_types, mt_specific_number_mu, decompose = FALSE) {
+compute.ed.ultimate <- function(row, col, units, lec, ht_specific_list, hlec_dlec, hlec, dlec, dlec_without, criteria_data, correlation_lec, ht_specific_number_minor_types, ht_specific_number_mu, decompose = FALSE) {
   
   #Selecting the relevant lists for hLECs, dLECs, and criteria
   {
@@ -492,10 +492,10 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
     current_col_dlec_without <- dlec_without[[col]]
     current_row_criteria <- criteria_data[row, 3:ncol(criteria_data)]
     current_col_criteria <- criteria_data[col, 3:ncol(criteria_data)]
-    nested_row <- mt_specific_list[[row]]
-    nested_col <- mt_specific_list[[col]]
-    row_adjustment <- mt_specific_number_minor_types[units[row,"mt"],] / mt_specific_number_mu[units[row,"mt"],]
-    col_adjustment <- mt_specific_number_minor_types[units[col,"mt"],] / mt_specific_number_mu[units[col,"mt"],]
+    nested_row <- ht_specific_list[[row]]
+    nested_col <- ht_specific_list[[col]]
+    row_adjustment <- ht_specific_number_minor_types[units[row,"ht"],] / ht_specific_number_mu[units[row,"ht"],]
+    col_adjustment <- ht_specific_number_minor_types[units[col,"ht"],] / ht_specific_number_mu[units[col,"ht"],]
   }
   
   #Identifying the criteria that are shared by bot mapping units
@@ -512,20 +512,20 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
                             definition_b = character())
   
   #Calculate ED between the mapping units within major types
-  if(units[row,"mt"] == units[col,"mt"]) {
+  if(units[row,"ht"] == units[col,"ht"]) {
     
     #Increase the ecological distance with the calculated increment
-    within <- calculate.ed.within(row, col, lec, mt_specific_list, correlation_lec, row_adjustment, col_adjustment, decompose = decompose)
+    within <- calculate.ed.within(row, col, lec, ht_specific_list, correlation_lec, row_adjustment, col_adjustment, decompose = decompose)
     ed_distance <- ed_distance + sum(within, na.rm = TRUE)
     if (decompose) components <- c(components, within)
     
   }
   
   #Calculate ED between mapping units within major types
-  if(units[row,"mt"] != units[col,"mt"]) {
+  if(units[row,"ht"] != units[col,"ht"]) {
     
     #Check if the mapping units have different SSGs, there can only be one ED for SSG
-    if(sum(abs(current_col_criteria[c("ssg_helophytes","ssg_trees")] - current_row_criteria[c("ssg_helophytes","ssg_trees")])) > 1) {
+    if(isTRUE(sum(abs(current_col_criteria[c("ssg_helophytes","ssg_trees")] - current_row_criteria[c("ssg_helophytes","ssg_trees")])) > 1)) {
       
       #Set one SSG to zero
       current_col_criteria["ssg_helophytes"] <- 0
@@ -533,7 +533,7 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
     }
     
     #Do not take SSG into account if it has been removed
-    if(current_col_criteria["ssg_removed"] == 1 || current_row_criteria["ssg_removed"] == 1) {
+    if(isTRUE(current_col_criteria["ssg_removed"] == 1) || isTRUE(current_row_criteria["ssg_removed"] == 1)) {
       
       #Set SSG to zero
       current_col_criteria[c("ssg_helophytes","ssg_trees")] <- 0
@@ -555,11 +555,11 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
     nested_row_names <- extract.lecs(nested_row)
     
     #Identify groups of correlated LECs
-    current_correlation_list <- lapply(correlation_lec, function(x, mt_specific_col, mt_specific_row) {
+    current_correlation_list <- lapply(correlation_lec, function(x, ht_specific_col, ht_specific_row) {
       
       #Select the LECs from the two mapping units
-      lec_col <- names(mt_specific_col)
-      lec_row <- names(mt_specific_row)
+      lec_col <- names(ht_specific_col)
+      lec_row <- names(ht_specific_row)
       
       #Identify the mapping units that are strongly correlating with another LEC 
       unique_index <- unique(c(which(lec_row %in% x), which(lec_col %in% x)))
@@ -637,7 +637,7 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
     } 
     
     #Add ED between major types
-    between <- calculate.ed.between(row, col, lec, mt_specific_list, current_row_hlec, current_col_hlec, correlation_lec, row_adjustment, col_adjustment, decompose = decompose)
+    between <- calculate.ed.between(row, col, lec, ht_specific_list, current_row_hlec, current_col_hlec, correlation_lec, row_adjustment, col_adjustment, decompose = decompose)
     ed_distance <- ed_distance + sum(between, na.rm = TRUE)
     if (decompose) components <- c(components, between)
     
@@ -654,7 +654,7 @@ compute.ed.ultimate <- function(row, col, units, lec, mt_specific_list, hlec_dle
 }
 
 #Define function to calculate ecological distance between two mapping units
-calculate.ed.between <- function(row, col, lec, mt_specific_list, current_row_lecs, current_col_lecs, correlation_lec, row_adjust, col_adjust, decompose = FALSE) {
+calculate.ed.between <- function(row, col, lec, ht_specific_list, current_row_lecs, current_col_lecs, correlation_lec, row_adjust, col_adjust, decompose = FALSE) {
   
   #Create a vector to store the calculated ecological distance
   total_ed <- numeric()
@@ -682,15 +682,15 @@ calculate.ed.between <- function(row, col, lec, mt_specific_list, current_row_le
     col_data <- as.character(col_data[shared_lec])
     
     #Select the relevant major-type specific steps
-    nested_row <- mt_specific_list[[row]][shared_lec]
-    nested_col <- mt_specific_list[[col]][shared_lec]
+    nested_row <- ht_specific_list[[row]][shared_lec]
+    nested_col <- ht_specific_list[[col]][shared_lec]
     
     #Identify groups of correlated LECs
-    current_correlation_list <- lapply(correlation_lec, function(x, mt_specific_col, mt_specific_row) {
+    current_correlation_list <- lapply(correlation_lec, function(x, ht_specific_col, ht_specific_row) {
       
       #Select the LECs from the two mapping units
-      lec_col <- names(mt_specific_col)
-      lec_row <- names(mt_specific_row)
+      lec_col <- names(ht_specific_col)
+      lec_row <- names(ht_specific_row)
       
       #Identify the mapping units that are strongly correlating with another LEC 
       unique_index <- unique(c(which(lec_row %in% x), which(lec_col %in% x)))
@@ -749,7 +749,7 @@ calculate.ed.between <- function(row, col, lec, mt_specific_list, current_row_le
 }
 
 #Define function to calculate ecological distance between two mapping units
-calculate.ed.within <- function(row, col, lec, mt_specific_list, correlation_lec, row_adjust, col_adjust, decompose = FALSE) {
+calculate.ed.within <- function(row, col, lec, ht_specific_list, correlation_lec, row_adjust, col_adjust, decompose = FALSE) {
   
   #Create a vector to store the calculated ecological distance
   total_ed <- numeric()
@@ -766,15 +766,15 @@ calculate.ed.within <- function(row, col, lec, mt_specific_list, correlation_lec
   col_data <- as.character(col_data[shared_lec])
   
   #Select the relevant the major-type specific steps
-  nested_row <- mt_specific_list[[row]][shared_lec]
-  nested_col <- mt_specific_list[[col]][shared_lec]
+  nested_row <- ht_specific_list[[row]][shared_lec]
+  nested_col <- ht_specific_list[[col]][shared_lec]
   
   #Identify groups of correlated LECs
-  current_correlation_list <- lapply(correlation_lec, function(x, mt_specific_col, mt_specific_row) {
+  current_correlation_list <- lapply(correlation_lec, function(x, ht_specific_col, ht_specific_row) {
     
     #Select the LECs from the two mapping units
-    lec_col <- names(mt_specific_col)
-    lec_row <- names(mt_specific_row)
+    lec_col <- names(ht_specific_col)
+    lec_row <- names(ht_specific_row)
     
     #Identify the mapping units that are strongly correlating with another LEC 
     unique_index <- unique(c(which(lec_row %in% x), which(lec_col %in% x)))
@@ -950,19 +950,19 @@ aggregate.max <- function(corr_lec, row_data, col_data, nested_row, nested_col, 
 }
 
 #Define function to aggregate data frame with codes, mapping units, major types, and major-type groups
-aggregate.scale.units <- function(units, agg_unit, mt) {
+aggregate.scale.units <- function(units, agg_unit, ht) {
   
   #Choose major type
-  current_mt <- which(units$mt == mt)
+  current_ht <- which(units$ht == ht)
   
   #Choose the current aggregation
-  current_agg <- units[current_mt, agg_unit]
+  current_agg <- units[current_ht, agg_unit]
   
   #Identify elements with * or #
   exclude_agg <- grepl("[*#]", current_agg)
   
   #Exclude the elements 
-  current_mt <- current_mt[!exclude_agg]
+  current_ht <- current_ht[!exclude_agg]
   
   #Exclude the elements 
   current_agg <- current_agg[!exclude_agg]
@@ -991,32 +991,32 @@ aggregate.scale.units <- function(units, agg_unit, mt) {
   }))
   
   #Create a vector with mapping units for the major type
-  code <- paste(mt, "-", mu_string, sep = "")
+  code <- paste(ht, "-", mu_string, sep = "")
   
   #Create a column for major type group
-  mtg <- substr(x = code, start = 1, stop = 1)
+  htg <- substr(x = code, start = 1, stop = 1)
   
   #Create data frame
-  unit_data <- data.frame(code, mtg, mt, mu = seq_along(unique(unique_mu)))
+  unit_data <- data.frame(code, htg, ht, mu = seq_along(unique(unique_mu)))
   
   #Return the data frame
   return(unit_data)
 }
 
 #Define function to aggregate data frame with ecological spaces
-aggregate.scale.lecs <- function(units, lecs, agg_unit, mt) {
+aggregate.scale.lecs <- function(units, lecs, agg_unit, ht) {
   
   #Choose major type
-  current_mt <- which(units$mt == mt)
+  current_ht <- which(units$ht == ht)
   
   #Choose the current aggregation
-  current_agg <- units[current_mt, agg_unit]
+  current_agg <- units[current_ht, agg_unit]
   
   #Identify elements with * or #
   exclude_agg <- grepl("[*#]", current_agg)
   
   #Exclude the elements 
-  current_mt <- current_mt[!exclude_agg]
+  current_ht <- current_ht[!exclude_agg]
   
   #Exclude the elements 
   current_agg <- current_agg[!exclude_agg]
@@ -1034,7 +1034,7 @@ aggregate.scale.lecs <- function(units, lecs, agg_unit, mt) {
     first_mu <- current_agg == unique_mu[i]
     
     #Choose the LEC data
-    current_lec <- lecs[current_mt[first_mu], ]
+    current_lec <- lecs[current_ht[first_mu], , drop = FALSE]
     
     #Aggregate the LEC steps
     new_def <- apply(X = current_lec, MARGIN = 2, FUN = bs.unique.sorted)
@@ -1052,19 +1052,19 @@ aggregate.scale.lecs <- function(units, lecs, agg_unit, mt) {
 }
 
 #Define function to aggregate data frame with criteria
-aggregate.scale.criteria <- function(units, criteria, agg_unit, mt) {
+aggregate.scale.criteria <- function(units, criteria, agg_unit, ht) {
   
   #Choose major type
-  current_mt <- which(units$mt == mt)
+  current_ht <- which(units$ht == ht)
   
   #Choose the current aggregation
-  current_agg <- units[current_mt, agg_unit]
+  current_agg <- units[current_ht, agg_unit]
   
   #Identify elements with * or #
   exclude_agg <- grepl("[*#]", current_agg)
   
   #Exclude the elements 
-  current_mt <- current_mt[!exclude_agg]
+  current_ht <- current_ht[!exclude_agg]
   
   #Exclude the elements 
   current_agg <- current_agg[!exclude_agg]
@@ -1082,7 +1082,7 @@ aggregate.scale.criteria <- function(units, criteria, agg_unit, mt) {
     first_mu <- current_agg == unique_mu[i]
     
     #Choose the LEC data
-    current_lec <- criteria[current_mt[first_mu], ]
+    current_lec <- criteria[current_ht[first_mu], ]
     
     #Select the dLEC columns
     current_lec <- current_lec[3:ncol(current_lec)]
@@ -1098,32 +1098,32 @@ aggregate.scale.criteria <- function(units, criteria, agg_unit, mt) {
   colnames(new_def_data) <- colnames(criteria)[3:ncol(criteria)]
   
   #Create vector for major type
-  mt_bind <- rep(mt, nrow(new_def_data))
+  ht_bind <- rep(ht, nrow(new_def_data))
   
   #Create vector for code
-  code_bind <- paste0(mt_bind, "-", seq(1, nrow(new_def_data)))
+  code_bind <- paste0(ht_bind, "-", seq(1, nrow(new_def_data)))
   
   #Add major type and code to the data frame
-  new_def_data <- cbind(code = code_bind, mt = mt_bind, new_def_data)
+  new_def_data <- cbind(code = code_bind, ht = ht_bind, new_def_data)
   
   #Return the data frame
   return(new_def_data)
 }
 
 #Define function to aggregate lists with LEC steps
-aggregate.lec.list <- function(units, lec_list, agg_unit, mt) {
+aggregate.lec.list <- function(units, lec_list, agg_unit, ht) {
   
   #Choose major type
-  current_mt <- which(units$mt == mt)
+  current_ht <- which(units$ht == ht)
   
   #Choose the current aggregation
-  current_agg <- units[current_mt, agg_unit]
+  current_agg <- units[current_ht, agg_unit]
   
   #Identify elements with * or #
   exclude_agg <- grepl("[*#]", current_agg)
   
   #Exclude the elements 
-  current_mt <- current_mt[!exclude_agg]
+  current_ht <- current_ht[!exclude_agg]
   
   #Exclude the elements 
   current_agg <- current_agg[!exclude_agg]
@@ -1141,7 +1141,7 @@ aggregate.lec.list <- function(units, lec_list, agg_unit, mt) {
     first_mu <- current_agg == unique_mu[i]
     
     #Choose the LEC data
-    current_lec <- lec_list[current_mt[first_mu]]
+    current_lec <- lec_list[current_ht[first_mu]]
     
     #Find unique elements in the list
     current_lec_list[[i]] <- unique(unlist(current_lec))
@@ -1155,26 +1155,26 @@ aggregate.lec.list <- function(units, lec_list, agg_unit, mt) {
   }
   
   #Rename list
-  names(current_lec_list) <- paste0(mt, "-", seq_along(unique_mu))
+  names(current_lec_list) <- paste0(ht, "-", seq_along(unique_mu))
   
   #Return the data frame
   return(current_lec_list)
 }
 
 #Define function to aggregate lists with LECs
-aggregate.list <- function(units, lec_list, agg_unit, mt) {
+aggregate.list <- function(units, lec_list, agg_unit, ht) {
   
   #Choose major type
-  current_mt <- which(units$mt == mt)
+  current_ht <- which(units$ht == ht)
   
   #Choose the current aggregation
-  current_agg <- units[current_mt, agg_unit]
+  current_agg <- units[current_ht, agg_unit]
   
   #Identify elements with * or #
   exclude_agg <- grepl("[*#]", current_agg)
   
   #Exclude the elements 
-  current_mt <- current_mt[!exclude_agg]
+  current_ht <- current_ht[!exclude_agg]
   
   #Exclude the elements 
   current_agg <- current_agg[!exclude_agg]
@@ -1192,14 +1192,14 @@ aggregate.list <- function(units, lec_list, agg_unit, mt) {
     first_mu <- current_agg == unique_mu[i]
     
     #Choose the LEC data
-    current_lec <- lec_list[current_mt[first_mu]]
+    current_lec <- lec_list[current_ht[first_mu]]
     
     #Find unique elements in th list
     current_lec_list[[i]] <- unique(unlist(current_lec))
   }
   
   #Rename list
-  names(current_lec_list) <- paste0(mt, "-", seq_along(unique_mu))
+  names(current_lec_list) <- paste0(ht, "-", seq_along(unique_mu))
   
   #Return the data frame
   return(current_lec_list)
