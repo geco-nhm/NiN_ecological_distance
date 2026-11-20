@@ -7,9 +7,26 @@
   library(readxl)
   library(pbapply)
   library(parallel)
+
+  #Expand "and lower" ranges, including legacy tokens without an underscore.
+  expand.lower.steps <- function(definitions) {
+    pattern <- "([A-Z]{2})_?([a-z])\\([\u2012\u2013\u2212-]\\)"
+    vapply(definitions, function(definition) {
+      if (is.na(definition)) return(NA_character_)
+      matches <- gregexpr(pattern, definition, perl = TRUE)
+      tokens <- regmatches(definition, matches)[[1]]
+      replacements <- vapply(tokens, function(token) {
+        lec <- sub(pattern, "\\1", token, perl = TRUE)
+        upper <- sub(pattern, "\\2", token, perl = TRUE)
+        paste0(lec, "_0", paste(letters[seq_len(match(upper, letters))], collapse = ""))
+      }, character(1))
+      regmatches(definition, matches) <- list(replacements)
+      definition
+    }, character(1), USE.NAMES = FALSE)
+  }
   
-  #Set working directory
-  setwd("C:/Users/adamen/OneDrive - Universitetet i Oslo/documents/Doktorgrad/Tolga/NiN_ecological_distance/NiN_version_3/")
+  #Run this script from the repository root
+  dir.create("output", showWarnings = FALSE)
   
   #Define function to identify major-type specific steps
   find.mt.steps <- function(lec_vector) {
@@ -1117,7 +1134,7 @@
   
   
   #Import master data file
-  data_0005 <- read_xlsx(path = "input/NiN3.0_SplitVar.xlsx", sheet = "Typer")
+  data_0005 <- read_xlsx(path = "input/NiN_3.0.1_Master_Clean.xlsx", sheet = "Typer", col_types = "text")
   
   #Import data for criteria
   criteria_mt <- read.csv("input/NiN3_categorical_variables.csv")
@@ -1144,13 +1161,13 @@
   data_0005$mt <- sub(pattern = "-.*", replacement = "", x = data_0005$kortkode)
   
   #Create a column for NiN 2 major type
-  data_0005$nin2_mt <- sub(pattern = "-.*", replacement = "", x = data_0005$`NiN 2 kode`)
+  data_0005$nin2_mt <- sub(pattern = "-.*", replacement = "", x = data_0005$`F3MR-VS`)
   
   #Create a column for NiN 2 major type group
-  data_0005$nin2_mtg <- substr(x = data_0005$`NiN 2 kode`, start = 1, stop = 1)
+  data_0005$nin2_mtg <- substr(x = data_0005$`F3MR-VS`, start = 1, stop = 1)
   
   #Create a column for NiN 2 mapping unit
-  data_0005$nin2_mu <- sub(pattern = ".*-", replacement = "", x = data_0005$`NiN 2 kode`)
+  data_0005$nin2_mu <- sub(pattern = ".*-", replacement = "", x = data_0005$`F3MR-VS`)
   
   #Rename columns
   colnames(data_0005) <- c("long_code","code","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","def","17","nin2_code",
@@ -1159,6 +1176,9 @@
   
   #Remove KA_w from the definitions
   data_0005$def <- gsub(", \\[KA_w\\]", "", data_0005$def)
+
+  #Convert workbook shorthand to explicit basic steps before parsing LECs.
+  data_0005$def <- expand.lower.steps(data_0005$def)
   
   #Create data frame for dLECs
   data_0005_dlec <- data_0005[grepl(pattern = "NA-", x = data_0005$code), ]
@@ -2013,7 +2033,7 @@ ed_data_frame <- round(ed_data_frame, digits = 1)
 # Save ED data frame for 1.5000 to disk ----
 
 #Save csv file
-write.csv(ed_data_frame, "ed_matrix_005.csv")
+write.csv(ed_data_frame, "output/ed_matrix_005.csv")
 
 
 # Calculate ED for 1.20000 ----
@@ -2056,7 +2076,7 @@ ed_data_frame <- round(x = ed_data_frame, digits = 1)
 # Save ED data frame for 1.20000 to disk ----
 
 #Save csv file
-write.csv(ed_data_frame, "ed_matrix_020.csv")
+write.csv(ed_data_frame, "output/ed_matrix_020.csv")
 
 
 
