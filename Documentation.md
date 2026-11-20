@@ -55,6 +55,45 @@ Each major type has its own set of LECs. The total compositional turnover along 
 Several LECs (for example HH, HM, HA, and VF, TV, VM) are strongly correlated and could cause an inflation of ED with the default calculation method. In the group of correlated LECs, we only consider the ED for the LEC that gives the maximum value. In the current version of ED calculation, this correction has only been done for the HA, HM, and HH LECs, and for HR and HH. To change this, modify the cor_lec object in the create_ed_matrix.R script. 
 
 
+### Explaining a distance
+
+The decomposition tables record the additive terms used by the existing distance
+calculation. They explain the ecological dimensions of a difference; they do not
+establish why an observer assigned a particular map label.
+
+- LEC codes such as `KA` give their adjusted distance contributions, including
+  averaging across the two major-type perspectives.
+- Categorical criteria use their column names, such as `above_forest_line` and
+  `ssg_helophytes`. Contributions are recorded after the existing SSG cap/removal
+  and missing-value rules. An omitted criterion has no contribution to that pair.
+- `correlated_LECs:HA+HM+HH`, for example, is the maximum contribution of the listed
+  LECs under the existing correlation rule. It is one group contribution; it must
+  not be added again for each member. Overlapping groups follow the existing
+  order, which assigns shared LECs to the first applicable group.
+- `defining_LEC:KA`, for example, identifies KA's contribution to the defining-LEC
+  set penalty. A definition in only one type contributes 1; different ranges for
+  the same LEC count as two distinct definitions and contribute 2. Identical
+  definitions contribute 0 and are omitted. This counts differing definitions;
+  gradient separation is recorded separately under the ordinary LEC code.
+  `definition_a` and `definition_b` show the definitions for `type_a` and `type_b`,
+  with `absent` for a missing defining LEC. Multiple definitions for one LEC are
+  separated by `; `. These fields are missing for other component categories.
+- `defining_LEC_correlation_adjustment` records any existing joint correction as
+  a negative contribution. It must be included when summing the decomposition;
+  it is not arbitrarily assigned to a single LEC. The per-LEC defining terms plus
+  this adjustment replace the former `defining_LEC_difference` entry without
+  changing the original penalty.
+- `no_shared_LECs` is the additional unit when the two types share no qualifying
+  LECs. `no_difference` is a zero-valued placeholder when no nonzero terms remain.
+
+Signed contributions sum to the unrounded ecological distance. The matrix stores
+that total rounded to one decimal place; independently rounding each contribution
+before summing can give a different result. The long tables contain every ordered
+pair, including self-pairs, and no separate total rows. Both scales are exported
+as plain CSV files that can be read directly with R's `read.csv()`.
+
+See `script/README.md` for paired-vector lookup examples.
+
 ### References
 
 Halvorsen, R., Skarpaas, O., Bryn, A., Bratli, H., Erikstad, L., Simensen, T., & Lieungh, E. (2020). Towards a systematics of ecodiversity: The EcoSyst framework. *Global Ecology and Biogeography*, 29(11), 1887–1906. <https://doi.org/10.1111/geb.13164>
